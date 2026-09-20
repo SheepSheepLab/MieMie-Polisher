@@ -6,6 +6,9 @@ import vm from 'node:vm';
 const project = fileURLToPath(new URL('../', import.meta.url));
 const read = file => readFile(path.join(project, file), 'utf8');
 const pkg = JSON.parse(await read('package.json'));
+if (typeof pkg.version !== 'string' || pkg.version !== pkg.version.trim() || !/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(pkg.version)) {
+  throw Error('MieMie 版本必须是无前导零的 MAJOR.MINOR.PATCH，不允许预发布或构建后缀。');
+}
 const manifestText = await read('manifest.json');
 const polisherManifest = JSON.parse(manifestText);
 if (pkg.version !== polisherManifest.version) throw Error('package.json 与 manifest.json 的 Polisher 版本必须一致。');
