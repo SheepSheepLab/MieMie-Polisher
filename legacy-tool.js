@@ -700,5 +700,28 @@ function transferProtected(target,reference,current,tags) {
   el('protected-tags').oninput=()=>{config.protectedTags=el('protected-tags').value;persist();};
   el('base').value=config.base;el('model').value=config.model;el('tokens').value=config.maxTokens;el('timeout').value=config.timeoutSeconds;el('thinking-mode').value=config.thinkingMode;paintThinking();loadKey();paintCard();validBackup();showDebug();
   host[ID]={open:()=>api.showPanel(),root,panel};
-  return {root,panel};
+  // Lifecycle-only handoff: never persisted, exported or sent to the Hub.
+  // Preserve a page-only key and uncommitted API form edits when changing the
+  // launcher owner. In-flight work still follows the existing cancellation path.
+  const handoffFields=['base','key','model','tokens','timeout','thinking-mode'];
+  function captureSession(){
+    if(disposed)return null;
+    return {secret,enabled,activeTab,fields:Object.fromEntries(handoffFields.map(name=>[name,el(name).value])),remember:el('remember').checked,
+      models:[...el('model-list').options].map(option=>({value:option.value,label:option.textContent})),modelSelection:el('model-list').value};
+  }
+  function restoreSession(state){
+    if(disposed||!state)return;
+    if(typeof state.secret==='string'){secret=state.secret;if(secret)redactions.add(secret);}
+    for(const name of handoffFields)if(typeof state.fields?.[name]==='string')el(name).value=state.fields[name];
+    paintThinking();
+    if(typeof state.fields?.['thinking-mode']==='string')el('thinking-mode').value=state.fields['thinking-mode'];
+    if(Array.isArray(state.models)){
+      el('model-list').replaceChildren();for(const item of state.models){const option=doc.createElement('option');option.value=item.value;option.textContent=item.label;el('model-list').appendChild(option);}
+      el('model-list').value=state.modelSelection;
+    }
+    el('remember').checked=state.remember===true;enabled=state.enabled===true;paintMode();
+    el('auto').setAttribute('data-on',String(enabled));el('auto').setAttribute('aria-pressed',String(enabled));
+    if(tabs.includes(state.activeTab))selectTab(state.activeTab);
+  }
+  return {root,panel,captureSession,restoreSession};
 }

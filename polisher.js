@@ -10,6 +10,9 @@ export function createPolisherExtension(api) {
       api.attachPanel(tool.panel, {icon: POLISHER_ASSETS.icon});
     },
     open() { return api.showPanel(); },
+    // Private, in-memory handoff between this script's two launcher modes.
+    captureSession() { return tool?.captureSession(); },
+    restoreSession(state) { tool?.restoreSession(state); },
     deactivate() { tool = null; return resources.dispose(); },
   };
 }

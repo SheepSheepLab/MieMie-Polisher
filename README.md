@@ -1,8 +1,8 @@
 # MieMie Polisher · 咩咩润色工具
 
-MieMie Hub 的原生 Extension，当前版本 **1.0.1**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
+MieMie Hub 的原生 Extension，当前版本 **1.1.0**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
 
-本项目已从原工具箱物理拆分；当前 1.0.1 统一公开版本命名，业务代码、生命周期接入、图标和样式保持不变。构建与本项目测试不依赖 Hub 源码、Hub 目录或旧工具箱完整 JSON。实际在酒馆中运行时需要 Hub 提供 Extension API v1；这是运行协议依赖。
+本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.1.0 新增独立悬浮球和动态自动收纳；原翻译／润色业务、历史数据与 Icon 保持兼容。构建及测试不依赖 Hub 源码或另一个项目目录。
 
 ## 开发与构建
 
@@ -14,26 +14,29 @@ npm run build
 npm test
 ```
 
-本项目当前无需第三方开发依赖，使用 Node 内置构建／测试工具；保留独立 `package.json` 和 `package-lock.json`。`npm ci` 可独立执行，后续所需依赖可在本项目维护。`npm test` 会先构建。
+构建使用 Node 内置工具；DOM 测试使用仅开发依赖 jsdom 26.1.0，不进入发布 JSON。`npm ci` 可独立安装，`npm test` 会先构建。
 
 生成：
 
 ```text
-build/咩咩润色工具-Extension-1.0.1.json
+build/咩咩润色工具-Extension-1.1.0.json
+build/MieMie-Polisher-Extension-1.1.0.json
+build/MieMie-Extension-update.json
 build/manifest.json
 build/miemie-polisher.js
 ```
 
 前者用于酒馆助手导入，`manifest.json` 是声明副本，JavaScript 文件用于检查。`build/`、`node_modules/`、`test-results/` 均忽略，不是基础构建必须提交的文件。
 
-版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；运行时依赖 Extension API v1。GitHub Release Asset 使用 ASCII 文件名 `MieMie-Polisher-Extension-1.0.1.json`，与本地中文文件名的产物内容相同。
+版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；运行时依赖 Extension API v1。GitHub Release Asset 使用 ASCII 文件名 `MieMie-Polisher-Extension-1.1.0.json`，与本地中文文件名的产物内容相同。
 
 ## 目录职责
 
 ```text
 manifest.json                 正式 Extension 身份与 Launcher 声明
 polisher.js                   Extension 工厂 activate/open/deactivate
-entry.js                      本地脚本接入 Hub、重连、撤回
+entry.js                      本地脚本启动
+launcher-adapter.js            独立球、Hub 接入、重连、撤回
 legacy-tool.js                完整业务与 UI
 resources.js                  Hook、监听、计时器、请求取消与清理
 assets/                       润色专属图片与样式
@@ -45,14 +48,16 @@ docs/                         数据兼容及验证说明
 
 ## 使用
 
-启用兼容的 Hub，并导入本项目的 Extension JSON。Hub 与 Polisher 的助手脚本可任意先后加载；初次使用建议先 Hub 后 Polisher。不要同时启用旧工具箱或多个润色版本。菜单显示“咩咩润色”，管理页显示“咩咩润色工具”。
+将本项目 JSON 导入并启用后，没有 Hub 时自动出现独立球，点击打开原 Polisher UI。有 Hub 时默认收纳为 Hub 的“咩咩润色”入口。两者支持任意启动顺序；Hub 停用后独立球恢复，Hub 再启动后重新收纳。不要同时启用旧工具箱或多个 Polisher 实例。
 
-首次通过 `window.parent.__MieMieHub.extensions.provide` 注册并启用；可从 Hub 打开、停用、启用、卸载和重新注册。Runtime 卸载不删除助手脚本，也不删除旧设置／备份。停用独立助手脚本会撤回它提供的源。未启用 Hub 时，独立脚本等待 Hub 的就绪事件，不自行运行润色业务。
+Hub 仍在运行时，从 Hub 停用/注销 Polisher 不会使其绕过选择、自动转为独立业务。关闭 Polisher 自身脚本则清理来源和全部运行资源。已有数据和备份不随生命周期删除。
 
+- [Launcher 双模式协议及 keepStandalone 示例](docs/LAUNCHER-PROTOCOL.md)
+- [GitHub Package 与机器更新元数据](docs/PACKAGE.md)
 - [数据与历史标识兼容](docs/COMPATIBILITY.md)
 - [自身测试与组合测试](docs/TESTING.md)
 
-本项目不包含 Hub Runtime、时间线、Catalog、GitHub 下载或在线包管理。
+Polisher 不包含 Registry、Catalog 或自己的在线下载器；包安装和更新由 Hub 从作者 GitHub 完成。
 
 ## 授权与来源
 

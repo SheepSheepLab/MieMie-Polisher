@@ -1,6 +1,6 @@
 # Polisher 验证说明
 
-当前版本 **1.0.1**，独立自动测试共 **11 项**。
+当前版本 **1.1.0**。独立安装开发依赖、构建和测试：
 
 ```sh
 npm ci
@@ -8,27 +8,35 @@ npm run build
 npm test
 ```
 
-测试读取本项目源码与本项目生成的产物，不导入 Hub Runtime、不寻找兄弟目录。测试夹具仅提取旧工具箱中的算法、默认提示词与原 UI 模板，来源记录在 `tests/fixtures/README.md`。
+测试不导入 Hub Runtime，不查找兄弟目录，不连接真实服务。jsdom 仅用于可销毁的本地 DOM 模拟。
 
-- 4 项资源管理测试：取消不配合的请求等待、清理失败隔离与幂等、同步发送拦截撤销、保留第三方 fetch 包装。
-- 4 项兼容测试：算法／默认提示词原样、UI 仅保留已确认的身份变化、独立 JSON／Manifest／版本一致、历史业务数据键和标记保留。
-- 2 项工厂协议测试：挂载／打开／停用与已取消激活。使用本地 API 测试替身，不复制或导入 Hub 实现。
-- 1 项构建版本边界测试：构建拒绝版本后缀、前导零、缺失／多余段数和非字符串版本。
+当前 23 项测试包括：
 
-本次版本规范化会改变产物中的版本和导出说明；业务源码与 Icon 不变。构建的 `manifest.json` 与根目录正式 Manifest 字节一致。每次发布均对最终产物计算 SHA-256，不沿用旧版本的产物 Hash。
+- 原有 11 项：资源取消/清理、第三方 fetch wrapper 保留、旧版算法/Prompt/UI 基线、历史数据键、工厂生命周期及版本规范。
+- 9 项可选 Launcher 协议：独立打开/关闭、两种加载顺序、连续 5 次 Hub 重启、禁用/注销不自行复活、旧 Hub 异步清理等待、keepStandalone、重复来源、脚本 iframe 重载、卸载后监听撤销。
+- 1 项机器 Package：ASCII/中文 JSON 字节一致、文件/content Hash、Manifest、repository、永久产品 ID 与版本一致。
+- 2 项完整构建产物：无 Hub 时原业务真实执行到模拟 API/消息写回；连续模式切换保留未记住的页面 API Key、未保存接口输入、当前 tab 和自动开关，事件监听始终为一份，最终 fetch 恢复。敏感值只在测试内存，使用明确的 Fixture 字符串。
+
+`legacy-tool.js` 仅增加私有 `captureSession/restoreSession` 生命周期接口，用于切换 Launcher 所有者时传递页面内状态；算法/Prompt/原 HTML 基线保持字节一致。这是必要适配，不能声称整个业务文件完全未动。
 
 ## Hub + Polisher 组合验收
 
-组合测试由 MieMie-Hub 项目维护；把本项目产出的 JSON 作为文件交给测试即可，无需把 Polisher 源码放到 Hub 旁边。
-
-在独立 Hub 项目中执行：
+组合测试由独立 Hub 项目维护，只把本项目构建 JSON 交给它；不能引用 Polisher 源码。锁定文件保存双方版本及 SHA-256，更新配对后执行：
 
 ```sh
-npm run test:integration -- --polisher /absolute/path/咩咩润色工具-Extension-1.0.1.json
+npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.0.json
 ```
 
-Hub 的 `tests/integration/artifacts.lock.json` 明确锁定当前 Hub + Polisher 1.0.1 双方版本和 SHA-256；每次批准的配对变更都需更新锁定信息，校验失败时拒绝执行。跨项目测试仅引用已确定版本的产物，不把双方源码重新耦合。
+上面的 `/path/to/` 仅为公开文档占位，不是开发机路径。
 
-组合检查实际运行两份 JSON 的生命周期、业务处理和事件协作，具体检查数与本次结果以 Hub 的测试输出为准。运行环境为 Node + jsdom，角色、世界书、API 和文件选择由本地夹具模拟；不连接真实 API、不改变用户数据，不替代真实浏览器布局／动画和真实酒馆验证。
+## 真实环境黄金路径
 
-真实酒馆建议按以下顺序做拆分后的快速复核：确认两个新导出文件能分别导入；时间线与 Hello 正常；打开润色核对旧设置／提示词；润色、翻译各一次；恢复与发送原文；连续启停及卸载后重新注册。Polisher 的业务源码和 Icon 未变；版本规范化不增加 Polisher 业务功能。
+1. 只启用 Polisher：独立球出现，打开原 UI，确认旧 API Key / Prompt / 备份仍可读，翻译/润色各处理一次。
+2. 保持 Polisher 启用，启动 Hub：独立球消失、Hub Launcher 出现并打开原 UI。
+3. 停用 Hub：独立球恢复；再启用 Hub：再次收纳，无重复球。
+4. Hub 中停用或 Runtime 注销 Polisher：不得立刻出现独立球绕过用户操作；重新启用可恢复。
+5. Hub 完成 GitHub Package 能力后，从发现页安装或从历史 1.0.1 更新到 1.1.0，核对实例 ID 与已保存设置保留。
+
+切换会取消进行中的润色/接口请求，不迁移正在等待的请求。未保存接口输入及仅页面内 Key 在同一 Polisher iframe 内的两种模式之间保留；彻底停用/重载 Polisher 自己的脚本或页面时，这些未持久状态仍按页面级语义丢弃。要跨脚本更新保留 Key，请先使用现有的“在此浏览器记住密钥”。
+
+没有收到修正版 Icon；1.1.0 保持原图，不声称新 Icon 生效。DOM 模拟测试不替代真实酒馆布局、浏览器下载/CORS 或真实 OAuth 验证。

@@ -1,6 +1,6 @@
 # 第三方声明
 
-本文件记录 MieMie Polisher 1.0.1 当前实际使用的第三方组件范围。软件代码采用 GPL-3.0-or-later；第三方作品若有各自声明，应保留其原有权利与许可证，本项目不能替其重新授权。
+本文件记录 MieMie Polisher 当前实际使用的第三方组件范围。软件代码采用 GPL-3.0-or-later；第三方作品若有各自声明，应保留其原有权利与许可证，本项目不能替其重新授权。
 
 ## 产品代码与资源
 
@@ -10,9 +10,9 @@
 
 ## 开发与测试
 
-当前 `package.json` / `package-lock.json` 没有第三方 npm 依赖。构建和自身测试使用 Node.js 内置模块；Node.js 实现本身不被复制进仓库或酒馆助手 JSON。
+本项目直接开发／测试依赖为 **jsdom 26.1.0（MIT）**，用于一次性模拟浏览器 DOM。其传递依赖按 `package-lock.json` 锁定，许可证文件保留于安装后的各依赖包中。jsdom 及所有 npm 开发依赖不打包进 Polisher JSON；产品仍没有第三方运行时依赖。自行再分发开发依赖包时，应保留其原有 LICENSE / NOTICE。
 
-Hub + Polisher 组合测试由独立 Hub 项目维护，Hub 的 `jsdom` 是 Hub 的开发／测试依赖，不属于本项目依赖，也不会打包进 Polisher JSON。
+Node.js 内置模块用于构建及测试；Node.js 实现不被复制进本仓库或酒馆助手 JSON。跨项目组合测试读取确定版本的构建产物，不引用 Hub 源码。
 
 ## 运行环境
 
