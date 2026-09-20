@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "apiVersion": 1,
+  "id": "miemie.polisher",
+  "name": "咩咩润色工具",
+  "version": "1.0.1-hub.2",
+  "description": "咩咩润色工具（MieMie Polisher），保留原工具箱的翻译／润色功能、设置与备份。",
+  "entry": "polisher.js",
+  "icon": "assets/icon.png",
+  "contributes": {
+    "launcher": { "title": "咩咩润色", "icon": "🪶" }
+  }
+}

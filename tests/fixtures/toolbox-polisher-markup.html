@@ -1,0 +1,128 @@
+root.innerHTML=`<style>
+#meeme-translation{position:fixed;right:16px;bottom:24px;z-index:10000;color:#eee8ff;font:14px/1.55 system-ui;text-align:left;color-scheme:dark}
+#meeme-translation *{box-sizing:border-box}#meeme-translation [hidden]{display:none!important}
+#meeme-translation section{width:min(500px,calc(100vw - 32px));height:min(760px,calc(100dvh - 100px));display:flex;flex-direction:column;background:linear-gradient(140deg,#170d2b,#090e1d);border:1px solid var(--mm-palette-21,#7144a5);border-radius:16px;box-shadow:0 12px 45px #0009;overflow:hidden;margin-bottom:8px}
+#meeme-translation .mt-head{padding:16px 18px 12px;border-bottom:1px solid #413055;flex-shrink:0;background:#170f25}
+#meeme-translation .mt-heading{display:flex;gap:10px;align-items:center;justify-content:space-between}#meeme-translation .mt-heading strong{font-size:16px}
+#meeme-translation .mt-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px 12px;scrollbar-width:thin;scrollbar-color:var(--mm-palette-22,#765391) #100d1e}
+#meeme-translation .mt-mode{padding:6px 0}#meeme-translation .mt-mode button{width:100%;margin:0}
+#meeme-translation button{font:inherit;color:#e8ddf8;background:#241735;border:1px solid var(--mm-palette-20,#684583);border-radius:8px;padding:8px 10px;margin:3px 0;cursor:pointer;transition:background .16s,border-color .16s,transform .16s}
+#meeme-translation button:hover{background:#352047;border-color:var(--mm-palette-41,#a17ac4)}#meeme-translation button:active{transform:scale(.98)}#meeme-translation button:focus-visible{outline:2px solid var(--mm-palette-53,#e4c0ff);outline-offset:2px}
+#meeme-translation button[data-on=true]{border-color:var(--mm-palette-17,#26d2bd);background:var(--mm-palette-10,#123c3b);color:var(--mm-palette-46,#affff2)}
+#meeme-translation button:disabled{opacity:.5;cursor:wait}#meeme-translation button.mt-compact{padding:5px 10px;font-size:12px}
+#meeme-translation label{display:block;margin:10px 0;color:#d5c7e4}#meeme-translation input,#meeme-translation textarea,#meeme-translation select{font:inherit;width:100%;color:#eee;background:#0b0c19;border:1px solid #574168;border-radius:7px;padding:8px;margin-top:5px}
+#meeme-translation input[type=checkbox]{width:auto;margin:0 7px 0 0;accent-color:var(--mm-palette-44,#a876da)}#meeme-translation .mt-check{display:flex;align-items:center}
+#meeme-translation textarea{min-height:130px;resize:vertical;line-height:1.6}#meeme-translation small{display:block;color:#a99ab9;font-size:12px}
+#meeme-translation .mt-prompt-row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:10px;align-items:start}#meeme-translation .mt-prompt-row label{margin:0}#meeme-translation .mt-prompt-row select{margin-top:5px}
+#meeme-translation pre{max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#0a0b16;border:1px solid #382945;border-radius:7px;padding:10px;font-size:12px;scrollbar-width:thin}
+#meeme-translation p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}#meeme-translation .mt-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
+#meeme-translation .mt-footer{padding:10px 16px;background:#131322;border-top:1px solid #413055;flex-shrink:0}#meeme-translation [data-status]{font-size:12px;color:#c7b9da;max-height:70px;overflow:auto}
+#meeme-translation [data-api-status]{font-size:13px;color:#dbc4ef}#meeme-translation .mt-hint{margin:7px 0 3px}
+@media(prefers-reduced-motion:reduce){#meeme-translation *,#meeme-translation *::before{transition:none!important}}
+@media(max-height:560px){#meeme-translation section{height:calc(100dvh - 70px)}#meeme-translation{bottom:8px}#meeme-translation .mt-head{padding:8px 14px}#meeme-translation .mt-footer{padding:6px 12px}}
+#meeme-translation [data-working="true"]{background:linear-gradient(110deg,var(--mm-palette-14,#163c45),var(--mm-palette-15,#20655d),#423073,var(--mm-palette-14,#163c45));background-size:300% 100%;animation:mtWorking 2s linear infinite;border-color:var(--mm-palette-1,#00ffcc);box-shadow:0 0 12px var(--mm-palette-4,#00ffcc44);color:var(--mm-palette-50,#d9fff7)}
+@keyframes mtWorking{to{background-position:150% 0}}
+@media(prefers-reduced-motion:reduce){#meeme-translation [data-working="true"]{animation:none}}
+#meeme-translation .mt-inline-prompts{padding:8px 0 16px}
+#meeme-translation .mt-inline-prompts textarea{min-height:87px;height:87px}
+/* Keep the launcher and panel inside the visible viewport, outside body transforms. */
+#meeme-translation{left:calc(var(--mt-vx,0px) + 8px)!important;top:calc(var(--mt-vy,0px) + 8px)!important;right:auto!important;bottom:auto!important;width:calc(var(--mt-vw,100vw) - 16px);height:calc(var(--mt-vh,100dvh) - 16px);pointer-events:none;z-index:2147483000}
+#meeme-translation section{position:absolute;right:0;bottom:52px;width:min(500px,100%);height:min(760px,calc(100% - 52px));max-height:calc(100% - 52px);margin:0;pointer-events:auto}
+#meeme-translation [data-open]{position:absolute;right:0;bottom:0;margin:0;pointer-events:auto}
+#meeme-translation .mt-heading strong{min-width:0;overflow-wrap:anywhere}
+#meeme-translation .mt-prompt-row{grid-template-columns:minmax(0,1fr) minmax(76px,24%)}
+#meeme-translation input[data-remember]{appearance:none;-webkit-appearance:none;flex:none;width:22px;height:22px;padding:0;border:1px solid var(--mm-palette-38,#8a6ba7);border-radius:6px;background:#0b0c19;display:inline-grid;place-content:center;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
+#meeme-translation input[data-remember]:checked{background:var(--mm-palette-35,#8855db);border-color:var(--mm-palette-45,#ac83ee);box-shadow:0 0 8px var(--mm-palette-36,#8855db55)}
+#meeme-translation input[data-remember]::after{content:"";width:10px;height:6px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) scale(.5);opacity:0;transition:transform .18s,opacity .18s}
+#meeme-translation input[data-remember]:checked::after{opacity:1;transform:rotate(-45deg) scale(1)}
+#meeme-translation input[data-remember]:focus-visible{outline:2px solid var(--mm-palette-1,#00ffcc);outline-offset:3px}
+@media(max-height:360px){#meeme-translation .mt-head{padding:4px 10px}#meeme-translation .mt-footer{padding:4px 8px}#meeme-translation [data-status]{max-height:36px}}
+#meeme-translation .mt-prompt-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+#meeme-translation .mt-prompt-col{min-width:0;border:1px solid #49345e;border-radius:8px;padding:10px;background:#130e2080}
+#meeme-translation .mt-prompt-col strong{display:block;color:#dcc6fb;font-size:14px}
+#meeme-translation .mt-prompt-col label{margin:6px 0}#meeme-translation .mt-prompt-col textarea{display:block;min-height:87px}
+#meeme-translation .mt-library{border-top:1px dashed #60417f;margin-top:16px;padding-top:8px}
+#meeme-translation .mt-template-new{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+#meeme-translation .mt-template-new input{margin:0}
+#meeme-translation .mt-template-row{display:grid;grid-template-columns:minmax(0,1fr) 32px 32px 32px;gap:8px;margin-top:6px}
+#meeme-translation .mt-template-row button:first-child{text-align:left;overflow-wrap:anywhere}
+#meeme-translation .mt-template-row button{padding:7px}
+#meeme-translation .mt-template-editor{margin-top:12px;padding:10px;border:1px solid var(--mm-palette-39,#9566c8);border-radius:8px}
+@media(max-width:350px){#meeme-translation .mt-prompt-columns{gap:6px}#meeme-translation .mt-prompt-col{padding:6px}#meeme-translation .mt-template-new{grid-template-columns:1fr}}
+#meeme-translation [data-template-list]{max-height:240px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#meeme-translation .mt-template-editor label{margin:6px 0}#meeme-translation [data-edit-rules]{min-height:100px;height:100px}
+#meeme-translation .mt-mode-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#meeme-translation .mt-mode-pair .mt-mode{display:flex;min-width:0}
+#meeme-translation .mt-template-row{align-items:stretch;gap:6px;grid-template-columns:minmax(0,1fr) 34px 34px 34px}
+#meeme-translation .mt-template-row button{min-width:0;margin:0;min-height:36px}
+#meeme-translation .mt-template-row button:not(:first-child){display:flex;align-items:center;justify-content:center;padding:0;line-height:1;font-size:15px;text-align:center}
+#meeme-translation [data-template-current]>button,#meeme-translation [data-template-new],#meeme-translation [data-template-import]{width:100%}
+#meeme-translation [data-template-menu]{border:1px solid #60417f;border-radius:8px;padding:6px;margin:6px 0;background:#130e20}
+#meeme-translation [data-template-new]{margin:0 0 6px;text-align:left}
+#meeme-translation [data-template-import]{margin-top:8px}
+#meeme-translation .mt-default-row{grid-template-columns:minmax(0,1fr) 34px}
+/* Isolate the checkmark from host theme pseudo-elements. */
+#meeme-translation input[data-remember]{position:relative;appearance:none!important;-webkit-appearance:none!important;background-image:none!important;color:transparent!important}
+#meeme-translation input[data-remember]::before{content:none!important;display:none!important}
+#meeme-translation input[data-remember]::after{content:""!important;position:absolute!important;display:block!important;left:50%!important;top:45%!important;margin:0!important;width:10px!important;height:6px!important;background:none!important;border:0!important;border-left:2px solid #fff!important;border-bottom:2px solid #fff!important;box-shadow:none!important;transform:translate(-50%,-50%) rotate(-45deg)!important;opacity:0!important}
+#meeme-translation input[data-remember]:checked::after{opacity:1!important}
+#meeme-translation .mt-key-row,#meeme-translation .mt-model-row{display:flex;align-items:center;gap:12px}
+#meeme-translation .mt-key-row{justify-content:space-between}#meeme-translation .mt-key-row button,#meeme-translation .mt-model-row button{flex-shrink:0}
+#meeme-translation .mt-model-row small{min-width:0}#meeme-translation select:disabled{opacity:.45;cursor:not-allowed}
+#meeme-translation .mt-picker-line .mt-template-row{margin-top:0}.mt-picker-line{display:flex;gap:8px;align-items:stretch}.mt-picker-line [data-template-current]{flex:1;min-width:0}#meeme-translation .mt-picker-line [data-template-import]{flex:0 0 36px;width:36px;margin:0;padding:0;display:grid;place-items:center;font-size:15px}#meeme-translation [data-template-confirm]{width:100%;margin:10px 0}#meeme-translation [data-template-confirm][hidden]{display:none!important}
+#meeme-translation #mt-rules .mt-pad,#meeme-translation #mt-terms .mt-pad{padding-top:16px;padding-bottom:16px}
+#meeme-translation .mt-protection-settings{display:grid;gap:24px}
+#meeme-translation .mt-setting-block{display:grid;gap:10px}
+#meeme-translation .mt-setting-block label{display:grid;gap:8px;margin:0}
+#meeme-translation .mt-setting-block input,#meeme-translation .mt-setting-block textarea,#meeme-translation .mt-setting-block small,#meeme-translation .mt-setting-block button{margin:0}
+#meeme-translation .mt-setting-block button{justify-self:start}
+
+/* Icon tabs fill the existing fixed-height window; only page content scrolls. */
+#meeme-translation .mt-body{display:flex;flex-direction:column;overflow:hidden;padding:0 12px 12px}
+#meeme-translation .mt-body>.mt-mode-pair,#meeme-translation .mt-body>.mt-mode{flex-shrink:0}
+#meeme-translation .mt-workspace{display:flex;flex:1;min-height:0;margin-top:8px}
+#meeme-translation .mt-sidebar{display:flex;flex-direction:column;gap:8px;width:50px;margin-right:-2px;flex:none;padding-top:15px;position:relative;z-index:1;overflow-y:auto;scrollbar-width:none}
+#meeme-translation .mt-sidebar button{display:grid;place-items:center;flex-shrink:0;width:49px;height:46px;min-height:46px;margin:0;padding:11px;border:1px solid transparent;border-radius:11px 0 0 11px;background:transparent;color:#aa91be}
+#meeme-translation .mt-sidebar button[aria-selected=true]{background:#21162f;color:var(--mm-palette-54,#edcaff);border-color:var(--mm-palette-20,#684583);border-right-color:#21162f;box-shadow:inset 3px 0 var(--mm-palette-47,#b478e9)}
+#meeme-translation .mt-sidebar button:hover{background:#352047;color:var(--mm-palette-56,#f1dcff)}
+#meeme-translation .mt-sidebar button[aria-selected=true]:hover{background:#21162f}
+#meeme-translation .mt-sidebar svg{width:23px;height:23px;flex:none}
+#meeme-translation .mt-tab-content{flex:1;min-width:0;min-height:0;overflow:auto;padding:16px;background:#21162f;border:1px solid var(--mm-palette-20,#684583);border-radius:12px;scrollbar-width:thin;scrollbar-color:var(--mm-palette-22,#765391) transparent;overscroll-behavior:contain}
+#meeme-translation .mt-page-heading{font-size:15px;font-weight:650;margin:0 0 14px;color:var(--mm-palette-55,#eddbff)}
+#meeme-translation .mt-inline-prompts{padding:0}
+@media(max-width:420px){#meeme-translation .mt-body{padding:0 8px 8px}#meeme-translation .mt-tab-content{padding:10px}#meeme-translation .mt-sidebar{width:42px}#meeme-translation .mt-sidebar button{width:41px;height:43px;min-height:43px;padding:9px}#meeme-translation .mt-prompt-columns{grid-template-columns:minmax(0,1fr)}}
+</style>
+<section hidden aria-label="咩咩润色工具">
+  <header class="mt-head mm-tool-heading"><div class="mt-heading"><div class="mm-tool-brand"><img data-tool-icon="translation" alt="咩咩润色" draggable="false"><div class="mm-tool-titles"><strong>咩咩润色工具</strong><small data-card></small></div></div><button type="button" data-close class="mt-compact">收起面板</button></div></header>
+  <div class="mt-body" data-scroll>
+    <div class="mt-mode-pair"><div class="mt-mode"><button type="button" data-mode aria-pressed="false">当前：翻译模式</button></div>
+    <div class="mt-mode"><button type="button" data-auto aria-pressed="false">自动处理：关闭</button></div></div>
+      <div class="mt-mode"><button type="button" data-send-original aria-pressed="false">发送时使用原文：关闭</button></div>
+    <div class="mt-workspace"><nav class="mt-sidebar" role="tablist" aria-orientation="vertical" aria-label="翻译与润色设置"><button type="button" data-rules id="mt-tab-rules" role="tab" aria-controls="mt-rules" aria-selected="false" tabindex="-1" aria-label="翻译提示库" title="翻译提示库"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1zM12 6v14"/></svg></button><button type="button" data-terms id="mt-tab-terms" role="tab" aria-controls="mt-terms" aria-selected="false" tabindex="-1" aria-label="保护标签与术语" title="保护标签与术语"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3zM8 12l3 3 5-6"/></svg></button><button type="button" data-prompts id="mt-tab-prompts" role="tab" aria-controls="mt-prompts" aria-selected="false" tabindex="-1" aria-label="前置与后置提示词" title="前置与后置提示词"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 19h16M8 9l-3 3 3 3M16 9l3 3-3 3M11 15l2-6"/></svg></button><button type="button" data-config id="mt-tab-config" role="tab" aria-controls="mt-config" aria-selected="false" tabindex="-1" aria-label="接口配置" title="接口配置"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></button><button type="button" data-debug id="mt-tab-debug" role="tab" aria-controls="mt-debug" aria-selected="false" tabindex="-1" aria-label="本次调试" title="本次调试"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></button></nav><div class="mt-tab-content" data-tab-content><div class="mt-tab-page" data-rules-pane id="mt-rules" role="tabpanel" aria-labelledby="mt-tab-rules" tabindex="0" hidden inert><h3 class="mt-page-heading" data-rules-heading>翻译提示库</h3>
+<div class="mt-picker-line"><button type="button" data-template-import title="导入提示词" aria-label="导入提示词">📥</button><div data-template-current></div></div><div data-template-menu id="mt-template-menu" hidden><button type="button" data-template-new>＋新建提示词</button><div data-template-list></div></div><button type="button" data-template-confirm hidden>确定</button><input type="file" data-template-file accept=".json,application/json" hidden>
+<div data-template-editor class="mt-template-editor" hidden><small data-editor-hint>自动保存 · 再点 ✏️ 收起</small><label>名称<input data-edit-name maxlength="80"></label><label>目标语言<input data-edit-target></label><label>要求<textarea data-edit-rules></textarea></label></div>
+    </div><div class="mt-tab-page" data-terms-pane id="mt-terms" role="tabpanel" aria-labelledby="mt-tab-terms" tabindex="0" hidden inert><h3 class="mt-page-heading" data-terms-heading>保护标签与术语</h3>
+      <div class="mt-protection-settings">
+        <div class="mt-setting-block"><label>保护标签（翻译／润色共用）<textarea data-protected-tags placeholder="初始为空，按需填写"></textarea></label><small>只填开始标签，自动匹配结束标签；整段保留，不发送给处理API。每行一个标签，留空则不保护；修改自动保存。</small></div>
+        <div class="mt-setting-block"><label>本角色术语表（每行：原词 = 译词）<textarea data-term-text placeholder="初始为空，按需填写"></textarea></label><small>修改自动保存。术语作为要求交给模型，不机械替换正文。</small></div>
+      </div>
+    </div><div class="mt-tab-page" data-prompts-pane id="mt-prompts" role="tabpanel" aria-labelledby="mt-tab-prompts" tabindex="0" hidden inert><h3 class="mt-page-heading" data-prompts-heading>前置与后置提示词</h3>    <div class="mt-inline-prompts">
+      <div class="mt-prompt-columns"><div class="mt-prompt-col"><strong>前置提示词</strong><label>身份<select data-pre-role aria-label="前置提示词身份"><option value="system">系统</option><option value="user">用户</option><option value="assistant">AI助手</option></select></label><textarea data-pre-text placeholder="留空不发送" aria-label="前置提示词内容"></textarea></div><div class="mt-prompt-col"><strong>后置提示词</strong><label>身份<select data-post-role aria-label="后置提示词身份"><option value="system">系统</option><option value="user">用户</option><option value="assistant">AI助手</option></select></label><textarea data-post-text placeholder="留空不发送" aria-label="后置提示词内容"></textarea></div></div>
+    </div>
+    <small style="margin:12px 9px 4px">用于当前模式的请求，按角色保存。发送顺序：前置 → 当前模式要求与术语 → 正文 → 尾部。身份按所选 role 发送，不启用接口专属预填充；接口是否接受尾部助手消息取决于服务。</small></div><div class="mt-tab-page" data-config-pane id="mt-config" role="tabpanel" aria-labelledby="mt-tab-config" tabindex="0" hidden inert><h3 class="mt-page-heading" data-config-heading>接口配置</h3>
+      <label>API 地址<input data-base placeholder="https://服务地址/v1" autocomplete="off"></label><small>支持含 /v1 的根地址，或完整 /chat/completions 地址。</small>
+      <label>API 密钥<input data-key type="password" autocomplete="off"></label>
+      <div class="mt-key-row"><label class="mt-check"><input data-remember type="checkbox">在此浏览器记住密钥</label><button type="button" data-clear-key class="mt-compact">清除密钥</button></div>
+      <div class="mt-model-row"><button type="button" data-models>获取模型列表</button><small>默认仅当前页面使用。勾选后本地保存，不随脚本导出；同源脚本可能读取。</small></div><label>可用模型<select data-model-list><option value="">先获取模型列表，再选择</option></select></label>
+      <label>模型名称（也可手填）<input data-model autocomplete="off"></label>
+      <label>模型思考模式<select data-thinking-mode></select></label><small>按模型名称匹配。未知模型使用服务默认；中转需支持对应参数，不自动重发。</small>
+      <label>最大输出 token<input data-tokens type="number" min="256" max="65536"></label>
+      <label>处理等待上限（秒，30–1800）<input data-timeout type="number" min="30" max="1800" step="1"></label>
+      <div class="mt-actions"><button type="button" data-save-config>保存接口</button><button type="button" data-test>连接测试</button></div><p data-api-status role="status" aria-live="polite"></p>
+      <small>测试和获取列表直接读取当前填写的信息。测试只发送简短消息，最多等待 30 秒；服务需允许浏览器跨域请求。</small>
+    </div><div class="mt-tab-page" data-debug-pane id="mt-debug" role="tabpanel" aria-labelledby="mt-tab-debug" tabindex="0" hidden inert><h3 class="mt-page-heading" data-debug-heading>本次调试</h3>
+      <small>只在当前页面显示，不包含授权头；内容可能含剧情，请自行决定是否分享。</small><p>处理 API：实际消息、返回与诊断</p><pre data-log></pre><p>主 API：最后正文换回原文</p><p data-outgoing-status></p><pre data-main-log></pre>
+    </div></div></div>
+  </div>
+  <footer class="mt-footer"><div class="mt-actions"><button type="button" data-translate>翻译／重译最后回复</button><button type="button" data-restore>查看原文</button></div><p data-status role="status" aria-live="polite"></p></footer>
+</section><button type="button" data-open>🐑 正文翻译</button>
