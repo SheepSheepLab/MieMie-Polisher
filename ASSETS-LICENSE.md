@@ -36,11 +36,11 @@ SheepSheep 已确认：该图片使用 ChatGPT / OpenAI 图像生成功能为咩
 
 第三方可以 Fork GPL 软件代码、修改功能、商业发布并对修改版收费，继续遵守 GPL。未获单独品牌／美术资产授权时，发布独立产品应移除或替换指定咩咩角色图片、官方角色 Icon、Logo 和保留品牌视觉，使用自己的产品名称与视觉资产，并遵守 [BRAND.md](BRAND.md) 的来源识别规则。
 
-例如：MieMie Hub GPL Code → Fork → StarHub → 自己的 Logo / Icon → ￥99，符合上述边界且遵守 GPL 时允许。“改一点功能 → 保留咩咩角色 Icon → 命名 MieMie Pro / 咩咩Pro → ￥99”不由当前默认品牌／素材许可授权。
+例如：MieMie Polisher GPL Code → Fork → StarPolisher → 自己的 Logo / Icon → ￥99，符合上述边界且遵守 GPL 时允许。“改一点功能 → 保留咩咩角色 Icon → 命名 MieMie Polisher Pro / 咩咩润色Pro → ￥99”不由当前默认品牌／素材许可授权。
 
 可以移除指定 PNG 并相应调整构建，或按构建所需的相同路径替换为自有或许可兼容的图片。保留官方图片并用于修改版发行，不属于“原样转载”，无论免费或收费，均需另行明确素材授权；这不限制修改版代码本身的 GPL 权利。
 
-About、Credits、README、许可及来源说明仍可如实保留“Based on MieMie Hub by SheepSheep / 基于咩咩Hub”等文字。更换产品品牌不要求删除 GPL 要求保留的版权、许可及来源信息。
+About、Credits、README、许可及来源说明仍可如实保留“Based on MieMie Polisher by SheepSheep / 基于咩咩润色工具”等文字。更换产品品牌不要求删除 GPL 要求保留的版权、许可及来源信息。
 
 ## 含图发布包的边界
 
