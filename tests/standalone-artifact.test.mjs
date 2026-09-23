@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 import {JSDOM, VirtualConsole} from 'jsdom';
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
 const artifact = JSON.parse(await readFile(new URL('../build/MieMie-Polisher-Extension-' + pkg.version + '.json', import.meta.url)));
+const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url)));
+const assertTitle = f => assert.equal(f.h.document.querySelector('#meeme-translation .mm-tool-titles > strong').textContent, `${manifest.name} - ${manifest.version}`);
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 function environment() {
@@ -46,7 +48,7 @@ function cooperativeHub(f) {
 test('complete built script works without Hub and retains original settings, hooks and API request behavior', async () => {
   const f=environment(); await f.source.ready;
   try {
-    assert.equal(f.source.mode,'standalone');assert.equal(f.eventCount(),10);assert.notEqual(f.h.fetch,f.originalFetch);
+    assert.equal(f.source.mode,'standalone');assertTitle(f);assert.equal(f.eventCount(),10);assert.notEqual(f.h.fetch,f.originalFetch);
     assert.equal(f.el('pre-text').value,'Fixture prefix');assert.equal(f.el('mode').textContent,'当前：润色模式');
     f.h.document.querySelector('[data-miemie-polisher-standalone]').click();await tick();assert.equal(f.h.document.querySelector('section').hidden,false);
     f.el('key').value='fixture-session-only-key';f.el('save-config').click();assert.equal(f.h.localStorage.getItem('meeme_translation_key_v1'),null);
@@ -65,9 +67,9 @@ test('built script preserves memory-only saved key, unsaved API form, auto switc
     const originalData=structuredClone(f.data());
     for(let i=0;i<3;i++){
       const hub=cooperativeHub(f);hub.start();await f.source.settled();
-      assert.equal(f.source.mode,'hub');assert.equal(f.el('key').value,'fixture-unsaved-key');assert.equal(f.el('model').value,'fixture-unsaved-model');assert.equal(f.el('auto').getAttribute('aria-pressed'),'true');assert.equal(f.el('config').getAttribute('aria-selected'),'true');assert.equal(f.eventCount(),10);
+      assert.equal(f.source.mode,'hub');assertTitle(f);assert.equal(f.el('key').value,'fixture-unsaved-key');assert.equal(f.el('model').value,'fixture-unsaved-model');assert.equal(f.el('auto').getAttribute('aria-pressed'),'true');assert.equal(f.el('config').getAttribute('aria-selected'),'true');assert.equal(f.eventCount(),10);
       assert.equal(f.h.document.querySelectorAll('#meeme-translation').length,1);assert.equal(f.h.document.querySelector('[data-miemie-polisher-standalone]'),null);
-      await hub.stop();await f.source.settled();assert.equal(f.source.mode,'standalone');assert.equal(f.el('key').value,'fixture-unsaved-key');assert.equal(f.eventCount(),10);
+      await hub.stop();await f.source.settled();assert.equal(f.source.mode,'standalone');assertTitle(f);assert.equal(f.el('key').value,'fixture-unsaved-key');assert.equal(f.eventCount(),10);
     }
     // Business uses the saved page-only key, not the draft field, just as before.
     await f.emit('GENERATION_STARTED','normal');f.context.chat.push({is_user:false,is_system:false,mes:'<story_scene>Fixture new generation</story_scene>',swipe_id:0});await f.emit('GENERATION_ENDED');

@@ -7,6 +7,7 @@ export function createPolisherExtension(api) {
     activate() {
       if (api.signal.aborted) return;
       tool = mountPolisherTool(api, resources, POLISHER_ASSETS);
+      tool.panel.querySelector('.mm-tool-titles > strong').textContent = `${POLISHER_MANIFEST.name} - ${POLISHER_MANIFEST.version}`;
       api.attachPanel(tool.panel, {icon: POLISHER_ASSETS.icon});
     },
     open() { return api.showPanel(); },
