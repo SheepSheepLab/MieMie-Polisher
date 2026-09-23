@@ -1,8 +1,8 @@
 # MieMie Polisher · 咩咩润色工具
 
-MieMie Hub 的原生 Extension，当前版本 **1.1.0**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
+MieMie Hub 的原生 Extension，当前版本 **1.1.1**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
 
-本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.1.0 新增独立悬浮球和动态自动收纳；原翻译／润色业务、历史数据与 Icon 保持兼容。构建及测试不依赖 Hub 源码或另一个项目目录。
+本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.1.0 新增独立悬浮球和动态自动收纳；1.1.1 仅替换 SheepSheep 提供的修正版 Icon 并提升 PATCH；原翻译／润色业务与数据结构不变。构建及测试不依赖 Hub 源码或另一个项目目录。
 
 ## 开发与构建
 
@@ -19,8 +19,8 @@ npm test
 生成：
 
 ```text
-build/咩咩润色工具-Extension-1.1.0.json
-build/MieMie-Polisher-Extension-1.1.0.json
+build/咩咩润色工具-Extension-1.1.1.json
+build/MieMie-Polisher-Extension-1.1.1.json
 build/MieMie-Extension-update.json
 build/manifest.json
 build/miemie-polisher.js
@@ -28,7 +28,7 @@ build/miemie-polisher.js
 
 前者用于酒馆助手导入，`manifest.json` 是声明副本，JavaScript 文件用于检查。`build/`、`node_modules/`、`test-results/` 均忽略，不是基础构建必须提交的文件。
 
-版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；运行时依赖 Extension API v1。GitHub Release Asset 使用 ASCII 文件名 `MieMie-Polisher-Extension-1.1.0.json`，与本地中文文件名的产物内容相同。
+版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；运行时依赖 Extension API v1。GitHub Release Asset 使用 ASCII 文件名 `MieMie-Polisher-Extension-1.1.1.json`，与本地中文文件名的产物内容相同。
 
 ## 目录职责
 

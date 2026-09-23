@@ -1,6 +1,6 @@
 # Polisher 验证说明
 
-当前版本 **1.1.0**。独立安装开发依赖、构建和测试：
+当前版本 **1.1.1**。独立安装开发依赖、构建和测试：
 
 ```sh
 npm ci
@@ -24,7 +24,7 @@ npm test
 组合测试由独立 Hub 项目维护，只把本项目构建 JSON 交给它；不能引用 Polisher 源码。锁定文件保存双方版本及 SHA-256，更新配对后执行：
 
 ```sh
-npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.0.json
+npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.1.json
 ```
 
 上面的 `/path/to/` 仅为公开文档占位，不是开发机路径。
@@ -35,8 +35,8 @@ npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.0.
 2. 保持 Polisher 启用，启动 Hub：独立球消失、Hub Launcher 出现并打开原 UI。
 3. 停用 Hub：独立球恢复；再启用 Hub：再次收纳，无重复球。
 4. Hub 中停用或 Runtime 注销 Polisher：不得立刻出现独立球绕过用户操作；重新启用可恢复。
-5. Hub 完成 GitHub Package 能力后，从发现页安装或从历史 1.0.1 更新到 1.1.0，核对实例 ID 与已保存设置保留。
+5. 保持真实酒馆安装版本 1.1.0，由用户在 Hub 检查并更新到 1.1.1：核对单一脚本实例、安装实例 ID 不变，原设置/API Key/Prompt/备份保留，修正版 Icon 生效。
 
 切换会取消进行中的润色/接口请求，不迁移正在等待的请求。未保存接口输入及仅页面内 Key 在同一 Polisher iframe 内的两种模式之间保留；彻底停用/重载 Polisher 自己的脚本或页面时，这些未持久状态仍按页面级语义丢弃。要跨脚本更新保留 Key，请先使用现有的“在此浏览器记住密钥”。
 
-没有收到修正版 Icon；1.1.0 保持原图，不声称新 Icon 生效。DOM 模拟测试不替代真实酒馆布局、浏览器下载/CORS 或真实 OAuth 验证。
+1.1.1 使用 SheepSheep 提供的修正版 Icon 原始 PNG，未重绘、压缩或调整尺寸。DOM 模拟测试不替代真实酒馆布局、浏览器下载/CORS 或真实 OAuth 验证。
