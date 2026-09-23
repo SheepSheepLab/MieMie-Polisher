@@ -1,5 +1,7 @@
 # MieMie Polisher · 咩咩润色工具
 
+咩咩润色工具属于由 SheepSheep 发起和创建的咩咩（MieMie）开源软件与社区生态。SheepSheep 是生态 Founder / 创始人；SheepSheepLab 是官方 GitHub 开发、维护与发布组织／命名空间，本项目通过该组织维护和发布，并欢迎社区贡献者共同参与。
+
 MieMie Hub 的原生 Extension，当前版本 **1.1.3**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
 
 本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.1.0 新增独立悬浮球和动态自动收纳；1.1.3 在面板标题显示 Manifest 版本号，沿用 1.1.2 修正版 Icon；原翻译／润色业务与数据结构不变。构建及测试不依赖 Hub 源码或另一个项目目录。
@@ -61,18 +63,18 @@ Polisher 不包含 Registry、Catalog 或自己的在线下载器；包安装和
 
 ## 授权与来源
 
-Copyright © 2026 SheepSheep。
+Copyright © 2026 SheepSheep。社区贡献者（Community Contributors）保留各自的贡献者身份；除另有说明，贡献内容的版权归相应贡献者所有。
 
 本项目的软件代码采用 **GNU General Public License v3.0 or later**（SPDX：`GPL-3.0-or-later`）。你可以按照 GNU 通用公共许可证第 3 版，或自行选择自由软件基金会发布的任何后续版本，使用、研究、修改、再分发及商业使用软件。软件不提供任何担保，具体权利与义务见 [LICENSE](LICENSE)。
 
 该授权包括本项目的 JavaScript、CSS、HTML、Manifest、软件配置、构建脚本、测试、历史代码测试基线及内置业务提示词（包括 `WUXIA_EXAMPLE`）。`LICENSE` 是[GNU 官方 GPLv3 完整文本](https://www.gnu.org/licenses/gpl-3.0.txt)的原样副本；“or later”的选择由本声明及包元数据明确，不修改许可证正文。
 
-MieMie / 咩咩分别为地位相同的英文、中文官方品牌；官方品牌身份、Logo、角色形象及指定角色 Icon 不因软件代码采用 GPL 而自动获得同等授权。当前 Reserved Assets 仅为 `assets/icon.png`，目录中的软件代码仍适用 GPL。第三方修改版及商业 Fork 请查看 [BRAND.md](BRAND.md) 与 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)：可使用自己的品牌和视觉资产按 GPL 收费分发代码；新素材政策允许免费原样转载含保留素材的官方包，默认不授权收费转售该含图包，且不追溯撤销历史授权。
+“咩咩”与“MieMie”分别为地位同级的中文、英文官方品牌；中文语境优先写“咩咩 / MieMie”，英文、GitHub 与技术语境优先写“MieMie / 咩咩”，书写顺序不表示主次。官方品牌身份、Logo、角色形象及指定角色 Icon 不因软件代码采用 GPL 而自动获得同等授权。当前 Reserved Assets 仅为 `assets/icon.png`，目录中的软件代码仍适用 GPL。第三方修改版及商业 Fork 请查看 [BRAND.md](BRAND.md) 与 [ASSETS-LICENSE.md](ASSETS-LICENSE.md)：可使用自己的品牌和视觉资产按 GPL 收费分发代码；新素材政策允许免费原样转载含保留素材的官方包，默认不授权收费转售该含图包，且不追溯撤销历史授权。
 
 - [品牌身份与正常引用规则](BRAND.md)
 - [指定 PNG 的来源与素材使用范围](ASSETS-LICENSE.md)
 - [第三方依赖及运行环境说明](THIRD_PARTY_NOTICES.md)
 
-按 SheepSheep 的来源确认，原咩咩工具箱和本项目的需求、功能设计及架构决策由 SheepSheep 提出，代码主要由 Codex 按这些需求生成、修改和迭代；当前没有其他需列出的共同版权人。`WUXIA_EXAMPLE` 同样由 Codex 根据需求生成，并非从第三方 Prompt、网站或小说原文复制。当前审计未识别出复制或改写自第三方项目的产品代码。
+按既有来源记录，原咩咩工具箱及本项目初始创建阶段的需求、功能设计与架构决策由 SheepSheep 提出，初始代码主要由 Codex 按这些需求生成、修改和迭代。此记录说明初始创建来源，不将后续社区贡献归为 SheepSheep 的独占作品。`WUXIA_EXAMPLE` 同样由 Codex 根据需求生成，并非从第三方 Prompt、网站或小说原文复制。当前审计未识别出复制或改写自第三方项目的产品代码。
 
 对外分发时应随附 `LICENSE`、上述品牌／素材说明及适用的第三方声明，并按 GPL 提供对应版本源码和构建材料。当前构建不会把这些文件嵌入酒馆助手 JSON；单独一个 JSON 不能替代完整的授权说明与源码提供安排。
