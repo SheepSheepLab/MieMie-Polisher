@@ -6,6 +6,6 @@
 
 `package.json` 与 Extension `manifest.json` 必须声明相同版本。构建拒绝不符合上述格式的版本。Git Tag 使用 `v<version>`，GitHub Pre-release 是发布状态，仍可用于纯三段式版本，不属于版本字符串的一部分。
 
-本次 Polisher 版本为 `1.1.3`，仅增加面板标题版本显示并提升 PATCH，沿用 1.1.2 Icon，不修改业务或数据结构。GitHub 分发文件为 ASCII `MieMie-Polisher-Extension-1.1.3.json`、`manifest.json` 与机器元数据 `MieMie-Extension-update.json`；本地同时生成字节一致的中文产品文件名。1.1.2 及更早历史发布保持不变。
+本次 Polisher 版本为 `1.1.4`，仅提升 PATCH 以验收更新链路，沿用 1.1.3 的标题、业务和 Icon，不修改业务或数据结构。GitHub 分发文件为 ASCII `MieMie-Polisher-Extension-1.1.4.json`、`manifest.json` 与机器元数据 `MieMie-Extension-update.json`；本地同时生成字节一致的中文产品文件名。1.1.3 及更早历史发布保持不变。
 
 旧版本命名可能保留在源码提交历史中，不重写提交历史。版本规范化不改变永久 Extension ID `miemie.polisher`，也不修改旧数据兼容键 `meeme_translation_v1`、`meeme_translation_key_v1` 或翻译／润色业务。

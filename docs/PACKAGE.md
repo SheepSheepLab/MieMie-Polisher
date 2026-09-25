@@ -15,12 +15,12 @@
   "schemaVersion": 1,
   "format": "tavern-helper-script",
   "productId": "miemie.polisher",
-  "version": "1.1.3",
-  "tag": "v1.1.3",
+  "version": "1.1.4",
+  "tag": "v1.1.4",
   "scriptId": "4dd658f1-9d4b-4f74-bba8-305c4ef2a9c8",
   "manifest": { "...": "完整的正式 Manifest" },
   "asset": {
-    "name": "MieMie-Polisher-Extension-1.1.3.json",
+    "name": "MieMie-Polisher-Extension-1.1.4.json",
     "size": 0,
     "sha256": "构建时计算的最终 JSON 原始字节 SHA-256"
   },
@@ -34,4 +34,4 @@
 
 Hash/Digest 只能验证附件完整性，不证明作者身份或代码安全。Registry 默认上架和机器安装兼容均不表示安全审核。
 
-所有新版本只使用 `MAJOR.MINOR.PATCH`。1.1.0 新增独立 Launcher 和 Hub 自动收纳；1.1.3 仅增加面板标题版本显示并提升 PATCH。保留 1.1.2 Release 作为本轮真实更新测试基线。
+所有新版本只使用 `MAJOR.MINOR.PATCH`。1.1.0 新增独立 Launcher 和 Hub 自动收纳；1.1.4 仅提升 PATCH，用于验收 Hub 0.6.2 的宿主名称版本同步修复，业务、Icon 与数据结构不变。保留 1.1.3 Release 作为本轮真实更新测试基线。

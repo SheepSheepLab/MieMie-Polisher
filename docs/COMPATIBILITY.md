@@ -9,9 +9,9 @@
 | 永久 Extension ID | `miemie.polisher` |
 | Launcher 名称 | 咩咩润色 |
 | 助手脚本 UUID | `4dd658f1-9d4b-4f74-bba8-305c4ef2a9c8` |
-| 版本 | `1.1.3` |
+| 版本 | `1.1.4` |
 
-Manifest 版本为纯三段式 `1.1.3`；永久 ID、产品名称和 Launcher 声明不变，不为旧 `miemie.translation` 添加别名。
+Manifest 版本为纯三段式 `1.1.4`；永久 ID、产品名称和 Launcher 声明不变，不为旧 `miemie.translation` 添加别名。
 
 ## 有意保留的历史标识
 

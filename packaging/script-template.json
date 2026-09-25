@@ -1,10 +1,10 @@
 {
   "type": "script",
   "enabled": true,
-  "name": "咩咩润色工具 1.1.3",
+  "name": "咩咩润色工具 1.1.4",
   "id": "4dd658f1-9d4b-4f74-bba8-305c4ef2a9c8",
   "content": "",
-  "info": "咩咩润色工具（MieMie Polisher）。支持独立运行及 MieMie Hub Extension API v1 自动收纳；保留翻译与润色两种模式，沿用 meeme_translation_v1 与 meeme_translation_key_v1。1.1.3 仅增加面板标题版本显示，沿用 1.1.2 图标，业务与数据结构不变。",
+  "info": "咩咩润色工具（MieMie Polisher）。支持独立运行及 MieMie Hub Extension API v1 自动收纳；保留翻译与润色两种模式，沿用 meeme_translation_v1 与 meeme_translation_key_v1。1.1.4 仅提升补丁版本以验收 Hub 更新链路，沿用现有标题版本显示与图标，业务与数据结构不变。",
   "button": {
     "enabled": false,
     "buttons": []
