@@ -1,6 +1,6 @@
 # Polisher 验证说明
 
-当前版本 **1.1.4**。独立安装开发依赖、构建和测试：
+当前本地候选版本 **1.2.0**（未发布）。独立安装开发依赖、构建和测试：
 
 ```sh
 npm ci
@@ -10,7 +10,7 @@ npm test
 
 测试不导入 Hub Runtime，不查找兄弟目录，不连接真实服务。jsdom 仅用于可销毁的本地 DOM 模拟。
 
-当前 23 项测试包括：
+历史基础 23 项测试包括（现有完整 suite 另含 Native Presentation / Shortcut 回归，数量以实际输出为准）：
 
 - 原有 11 项：资源取消/清理、第三方 fetch wrapper 保留、旧版算法/Prompt/UI 基线、历史数据键、工厂生命周期及版本规范。
 - 9 项可选 Launcher 协议：独立打开/关闭、两种加载顺序、连续 5 次 Hub 重启、禁用/注销不自行复活、旧 Hub 异步清理等待、keepStandalone、重复来源、脚本 iframe 重载、卸载后监听撤销。
@@ -24,7 +24,7 @@ npm test
 组合测试由独立 Hub 项目维护，只把本项目构建 JSON 交给它；不能引用 Polisher 源码。锁定文件保存双方版本及 SHA-256，更新配对后执行：
 
 ```sh
-npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.4.json
+npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.2.0.json
 ```
 
 上面的 `/path/to/` 仅为公开文档占位，不是开发机路径。
@@ -35,8 +35,8 @@ npm run test:integration -- --polisher /path/to/MieMie-Polisher-Extension-1.1.4.
 2. 保持 Polisher 启用，启动 Hub：独立球消失、Hub Launcher 出现并打开原 UI。
 3. 停用 Hub：独立球恢复；再启用 Hub：再次收纳，无重复球。
 4. Hub 中停用或 Runtime 注销 Polisher：不得立刻出现独立球绕过用户操作；重新启用可恢复。
-5. 保持真实酒馆安装版本 1.1.3，由用户在 Hub 检查并更新到 1.1.4：核对单一脚本实例、安装实例 ID 不变，原设置/API Key/Prompt/备份保留，标题显示「咩咩润色工具 - 1.1.4」，Icon 与 1.1.3 一致。
+5. 从已公开 1.1.4 验证升级到本地 1.2.0 候选：核对单一脚本实例、安装实例 ID 不变，原设置/API Key/Prompt/备份保留，标题显示「咩咩润色工具 - 1.2.0」。候选尚未上线，不能把公开更新按钮仍返回 1.1.4 当作已完成候选自动升级；自动升级链由隔离测试验证，实机按 Hub RC 清单操作。
 
 切换会取消进行中的润色/接口请求，不迁移正在等待的请求。未保存接口输入及仅页面内 Key 在同一 Polisher iframe 内的两种模式之间保留；彻底停用/重载 Polisher 自己的脚本或页面时，这些未持久状态仍按页面级语义丢弃。要跨脚本更新保留 Key，请先使用现有的“在此浏览器记住密钥”。
 
-1.1.4 标题从构建内嵌 Manifest 读取名称和版本；独立运行及 Hub 收纳后均验证显示一致。沿用 1.1.2 的 Icon 原始 PNG。DOM 模拟测试不替代真实酒馆布局、浏览器下载/CORS 或真实 OAuth 验证。
+当前候选标题从构建内嵌 Manifest 读取名称和版本；独立运行及 Hub 收纳后均验证显示一致。沿用 1.1.2 的 Icon 原始 PNG。DOM 模拟测试不替代真实酒馆布局、浏览器下载/CORS 或真实 OAuth 验证。
