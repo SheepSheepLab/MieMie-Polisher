@@ -79,3 +79,20 @@ test('built script preserves memory-only saved key, unsaved API form, auto switc
     assert.equal(JSON.stringify(f.source).includes('fixture-private-page-key'),false);
   } finally {await f.source.dispose();assert.equal(f.eventCount(),0);assert.equal(f.h.fetch,f.originalFetch);assert.equal(f.h.__MieMiePolisherSource,undefined);f.dom.window.close();}
 });
+
+
+test('actual standalone build overrides legacy percentage max-height across narrow resize without closing',async()=>{
+ const f=environment();await f.source.ready;
+ try{
+  f.h.document.querySelector('[data-miemie-polisher-standalone]').click();await tick();
+  const panel=f.h.document.querySelector('#meeme-translation section');
+  panel.style.setProperty('max-height','calc(100% - 52px)');
+  for(const width of [1200,390,320,800]){
+   f.h.innerWidth=width;f.h.innerHeight=720;f.h.dispatchEvent(new f.h.Event('resize'));await tick();
+   assert.equal(panel.hidden,false);assert.equal(panel.dataset.surfaceState,'open');
+   assert.equal(panel.style.getPropertyValue('max-height'),'700px');assert.equal(panel.style.getPropertyPriority('max-height'),'important');
+   assert.ok(parseFloat(panel.style.width)<=width-20);
+  }
+  assert.deepEqual(f.errors,[]);
+ }finally{await f.source.dispose();f.dom.window.close();}
+});

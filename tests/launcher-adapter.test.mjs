@@ -9,8 +9,9 @@ function fixture(options = {}) {
   const dom = new JSDOM('<!doctype html><body></body>', {url: 'https://fixture.invalid/'}), host = dom.window;
   const frame = new host.EventTarget();
   const count = {active: 0, peak: 0, open: 0, activated: 0, deactivated: 0, cleaned: 0};
-  const errors = [];
+  const errors = [];let lastApi;
   const factory = api => {
+    lastApi=api;
     let live = false, panel;
     api.onCleanup(() => {count.cleaned++; panel?.remove();});
     return {
@@ -23,7 +24,7 @@ function fixture(options = {}) {
     };
   };
   const make = () => createPolisherDualMode({host, frame, manifest, factory, icon: 'data:image/png;base64,AA==', keepStandalone: options.keepStandalone, onError: e => errors.push(String(e))});
-  return {dom, host, frame, count, errors, make};
+  return {dom, host, frame, count, errors, make, get api(){return lastApi;}};
 }
 // Test Adapter for the public provide/ready/release contract, independent of Hub source.
 function hubFixture(f, options = {}) {
@@ -60,7 +61,7 @@ test('standalone starts once, opens and closes original panel, and tears down', 
   assert.equal(source.mode, 'standalone'); assert.equal(f.count.active, 1);
   const button = f.host.document.querySelector('[data-miemie-polisher-standalone]'); button.click(); await flush();
   assert.equal(f.count.open, 1); assert.equal(f.host.document.querySelector('section').hidden, false);
-  f.host.document.querySelector('.mm-return').click(); assert.equal(f.host.document.querySelector('section').hidden, true);
+  f.host.document.querySelector('.mm-return').click(); await flush(); assert.equal(f.host.document.querySelector('section').hidden, true);
   await source.dispose(); assert.equal(f.count.active, 0); assert.equal(f.host.document.querySelector('section'), null); assert.equal(f.host.__MieMiePolisherSource, undefined); f.dom.window.close();
 });
 
@@ -129,4 +130,25 @@ test('unload removes event listeners so later Hub events cannot recreate DOM', a
   f.frame.dispatchEvent(new f.host.Event('pagehide')); await source.settled();
   const hub = hubFixture(f); hub.start(); f.host.dispatchEvent(new f.host.CustomEvent('miemie:hub-disposed', {detail: hub.hub})); await flush();
   assert.equal(f.count.active, 0); assert.equal(f.count.activated, 1); assert.equal(f.host.document.querySelector('[data-miemie-polisher-standalone]'), null); f.dom.window.close();
+});
+
+
+test('Standalone closePanel hides UI without deactivation or data cleanup',async()=>{
+ const f=fixture(),source=f.make();await source.ready;
+ f.host.document.querySelector('[data-miemie-polisher-standalone]').click();await flush();
+ const api=f.api,panel=f.host.document.querySelector('section');assert.equal(panel.hidden,false);assert.equal(await api.closePanel(),true);assert.equal(panel.hidden,true);assert.equal(f.count.active,1);assert.equal(f.count.deactivated,0);assert.equal(f.count.cleaned,0);
+ await api.showPanel();assert.equal(panel.hidden,false);await source.dispose();assert.equal(api.closePanel(),false);f.dom.window.close();
+});
+
+
+test('Standalone Escape and Back share close semantics and stale API cannot affect a new session',async()=>{
+ const f=fixture(),source=f.make();await source.ready;
+ const api=f.api;await api.showPanel();const panel=f.host.document.querySelector('section');
+ f.host.document.dispatchEvent(new f.host.KeyboardEvent('keydown',{key:'Escape'}));await flush();
+ assert.equal(panel.hidden,true);assert.equal(panel.inert,true);assert.equal(f.count.deactivated,0);
+ await api.showPanel();panel.querySelector('.mm-return').click();await flush();assert.equal(panel.hidden,true);assert.equal(panel.inert,true);
+ const hub=hubFixture(f);hub.start();await source.settled();await hub.stop();await source.settled();
+ await f.api.showPanel();const replacement=f.host.document.querySelector('section');
+ assert.notEqual(replacement,panel);assert.equal(api.closePanel(),false);assert.equal(replacement.hidden,false);
+ await source.dispose();f.dom.window.close();
 });

@@ -1,3 +1,4 @@
+import {POLISHER_PRODUCT} from './product-identity.js';
 export function mountPolisherTool(api, resources, assets) {
 'use strict';
 const DEFAULT_RULES = '不扩写、不添加称谓或情节，保留段落；内部标签及其属性原样保留，只翻译文本。';
@@ -220,7 +221,7 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation{position:fixed;right:16px;bottom:24px;z-index:10000;color:#eee8ff;font:14px/1.55 system-ui;text-align:left;color-scheme:dark}
 #meeme-translation *{box-sizing:border-box}#meeme-translation [hidden]{display:none!important}
 #meeme-translation section{width:min(500px,calc(100vw - 32px));height:min(760px,calc(100dvh - 100px));display:flex;flex-direction:column;background:linear-gradient(140deg,#170d2b,#090e1d);border:1px solid var(--mm-palette-21,#7144a5);border-radius:16px;box-shadow:0 12px 45px #0009;overflow:hidden;margin-bottom:8px}
-#meeme-translation .mt-head{padding:16px 18px 12px;border-bottom:1px solid #413055;flex-shrink:0;background:#170f25}
+#meeme-translation .mt-head{position:relative;inset:auto;width:auto;z-index:auto;padding:16px 18px 12px;border-bottom:1px solid #413055;flex-shrink:0;background:#170f25}
 #meeme-translation .mt-heading{display:flex;gap:10px;align-items:center;justify-content:space-between}#meeme-translation .mt-heading strong{font-size:16px}
 #meeme-translation .mt-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px 12px;scrollbar-width:thin;scrollbar-color:var(--mm-palette-22,#765391) #100d1e}
 #meeme-translation .mt-mode{padding:6px 0}#meeme-translation .mt-mode button{width:100%;margin:0}
@@ -310,8 +311,8 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation .mt-inline-prompts{padding:0}
 @media(max-width:420px){#meeme-translation .mt-body{padding:0 8px 8px}#meeme-translation .mt-tab-content{padding:10px}#meeme-translation .mt-sidebar{width:42px}#meeme-translation .mt-sidebar button{width:41px;height:43px;min-height:43px;padding:9px}#meeme-translation .mt-prompt-columns{grid-template-columns:minmax(0,1fr)}}
 </style>
-<section hidden aria-label="咩咩润色工具">
-  <header class="mt-head mm-tool-heading"><div class="mt-heading"><div class="mm-tool-brand"><img data-tool-icon="polisher" alt="咩咩润色" draggable="false"><div class="mm-tool-titles"><strong>咩咩润色工具</strong><small data-card></small></div></div><button type="button" data-close class="mt-compact">收起面板</button></div></header>
+<section hidden aria-label="${POLISHER_PRODUCT.name}">
+  <header class="mt-head mm-tool-heading"><div class="mt-heading"><div class="mm-tool-brand"><img data-tool-icon="polisher" alt="${POLISHER_PRODUCT.launcherName}" draggable="false"><div class="mm-tool-titles"><strong>${POLISHER_PRODUCT.name}</strong><small data-card></small></div></div><button type="button" data-close class="mt-compact">收起面板</button></div></header>
   <div class="mt-body" data-scroll>
     <div class="mt-mode-pair"><div class="mt-mode"><button type="button" data-mode aria-pressed="false">当前：翻译模式</button></div>
     <div class="mt-mode"><button type="button" data-auto aria-pressed="false">自动处理：关闭</button></div></div>
@@ -343,14 +344,14 @@ function transferProtected(target,reference,current,tags) {
     </div></div></div>
   </div>
   <footer class="mt-footer"><div class="mt-actions"><button type="button" data-translate>翻译／重译最后回复</button><button type="button" data-restore>查看原文</button></div><p data-status role="status" aria-live="polite"></p></footer>
-</section><button type="button" data-open>🐑 咩咩润色</button>
+</section><button type="button" data-open>🐑 ${POLISHER_PRODUCT.launcherName}</button>
 `;
   const theme=doc.createElement('style');theme.textContent=assets.styles;root.appendChild(theme);
   root.querySelector('[data-tool-icon]').src=assets.icon;
   root.querySelector('[data-open]').hidden=true;
   root.querySelector('[data-close]').hidden=true;
   const back=doc.createElement('button');back.type='button';back.className='mm-return';back.textContent='返回';
-  back.onclick=resources.guard(()=>host.__MieMieHub?.open());root.querySelector('section').appendChild(back);
+  back.onclick=resources.guard(()=>typeof api.closePanel==='function'?api.closePanel():host.__MieMieHub?.open());root.querySelector('section').appendChild(back);
   (doc.documentElement||doc.body).appendChild(root);
   function fitViewport(){if(!root.style)return;const v=host.visualViewport;
     root.style.setProperty('--mt-vw',(v?.width||host.innerWidth||500)+'px');
@@ -516,7 +517,11 @@ function transferProtected(target,reference,current,tags) {
     const r={operation:prefs().mode==='polish'?'润色':'翻译',backup:b,identity:last().message,scope:scope(),controller:new host.AbortController()};
     try{const result=b.processed||(b.expected!==b.source?b.expected:null);if(!result){say('还没有可对比的处理结果。');return;}b.processed=result;const text=b.expected===b.source?result:b.source;await write(r,text);release();say(text===b.source?'当前显示原文；再点一次可查看处理结果。':'当前显示最近处理结果；再点一次可查看原文。');}catch(e){say(e.message);}
   }
-  el('open').onclick=()=>panel.hidden=!panel.hidden;el('close').onclick=()=>panel.hidden=true;
+  // Keep the old hidden controls compatible, but route every UI entry through
+  // the adapter capability. Only old Hub versions need the hide fallback.
+  const closePanel=()=>typeof api.closePanel==='function'?api.closePanel():(panel.hidden=true);
+  el('open').onclick=resources.guard(()=>panel.hidden?api.showPanel():closePanel());
+  el('close').onclick=resources.guard(closePanel);
   const tabs=['rules','terms','prompts','config','debug'];
   let activeTab=null;
   const tabScroll=new Map();
@@ -649,7 +654,7 @@ function transferProtected(target,reference,current,tags) {
     const enter=event.type==='keydown'&&target?.closest?.('#send_textarea')&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229;
     const submit=event.type==='submit'&&target?.matches?.('#send_form');
     if(!click&&!enter&&!submit)return;
-    event.preventDefault();event.stopImmediatePropagation();void api.showPanel();panel.hidden=false;say('正文正在'+run.operation+'，请等待完成或点击处理按钮取消后再发送。输入内容已保留。');
+    event.preventDefault();event.stopImmediatePropagation();void api.showPanel();say('正文正在'+run.operation+'，请等待完成或点击处理按钮取消后再发送。输入内容已保留。');
   }
   resources.listen(host,'click',blockUserSend,true);resources.listen(host,'keydown',blockUserSend,true);resources.listen(host,'submit',blockUserSend,true);
   async function before(type,options,dry){
@@ -659,7 +664,7 @@ function transferProtected(target,reference,current,tags) {
     // generation: the host event emitter catches exceptions and keeps going.
     while(!disposed&&(run||blocked)){
       if(run)await run.promise;
-      if(blocked){void api.showPanel();panel.hidden=false;say('下一轮发送正在等待：点击处理按钮取消等待，即可保留当前正文继续。');await new Promise(resolve=>waiters.push(resolve));}
+      if(blocked){void api.showPanel();say('下一轮发送正在等待：点击处理按钮取消等待，即可保留当前正文继续。');await new Promise(resolve=>waiters.push(resolve));}
     }
     if(disposed)return;
     const item=last();generation={scope:start.scope,type,old:item?.message.mes,oldSwipe:item?.message.swipe_id??0,id:item?.id,stopped:start.cancelled||start.scope!==scope()};

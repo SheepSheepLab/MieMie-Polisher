@@ -10,19 +10,22 @@ const pkg = JSON.parse(await read('package.json'));
 if (typeof pkg.version !== 'string' || pkg.version !== pkg.version.trim() || !/^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/.test(pkg.version)) {
   throw Error('MieMie 版本必须是无前导零的 MAJOR.MINOR.PATCH，不允许预发布或构建后缀。');
 }
+const {POLISHER_PRODUCT}=await import('../product-identity.js');
 const manifestText = await read('manifest.json');
 const polisherManifest = JSON.parse(manifestText);
+if(polisherManifest.name!==POLISHER_PRODUCT.name||polisherManifest.contributes.launcher.title!==POLISHER_PRODUCT.launcherName)throw Error('Manifest display names must match Product Identity.');
 if (pkg.version !== polisherManifest.version) throw Error('package.json 与 manifest.json 的 Polisher 版本必须一致。');
 const extensionData = JSON.parse(await read('packaging/script-template.json'));
 const polisherAssets = {
   icon: 'data:image/png;base64,' + (await readFile(path.join(project, 'assets/icon.png'))).toString('base64'),
   styles: await read('assets/theme.css'),
+  launcherStyles:await read('assets/native-launcher.css'),
 };
 const polisherParts = [];
-for (const file of ['resources.js', 'legacy-tool.js', 'polisher.js', 'launcher-adapter.js', 'entry.js']) polisherParts.push((await read(file)).replace(/^export /gm, ''));
+for (const file of ['product-identity.js', 'native-floating-presentation.js', 'native-launcher.js', 'resources.js', 'legacy-tool.js', 'polisher.js', 'launcher-adapter.js', 'entry.js']) polisherParts.push((await read(file)).replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, ''));
 const extensionContent = [
   '// MieMie-Extension-Build: ' + JSON.stringify({schemaVersion: 1, productId: polisherManifest.id, version: pkg.version, scriptId: extensionData.id, repository: polisherManifest.repository}),
-  '// MieMie Polisher · 咩咩润色工具 Extension ' + polisherManifest.version,
+  '// '+POLISHER_PRODUCT.englishName+' · '+POLISHER_PRODUCT.name+' Extension ' + polisherManifest.version,
   "(() => { 'use strict';",
   'const POLISHER_MANIFEST=' + JSON.stringify(polisherManifest) + ';',
   'const POLISHER_ASSETS=' + JSON.stringify(polisherAssets) + ';',
@@ -41,7 +44,7 @@ const updateMetadata = {schemaVersion: 1, format: 'tavern-helper-script', produc
 };
 await mkdir(path.join(project, 'build'), {recursive: true});
 await writeFile(path.join(project, 'build/miemie-polisher.js'), extensionContent);
-await writeFile(path.join(project, 'build/咩咩润色工具-Extension-' + polisherManifest.version + '.json'), packageBytes);
+await writeFile(path.join(project, 'build/'+POLISHER_PRODUCT.name+'-Extension-' + polisherManifest.version + '.json'), packageBytes);
 await writeFile(path.join(project, 'build/' + assetName), packageBytes);
 await writeFile(path.join(project, 'build/manifest.json'), manifestText);
 await writeFile(path.join(project, 'build/MieMie-Extension-update.json'), JSON.stringify(updateMetadata, null, 2) + '\n');

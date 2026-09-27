@@ -1,14 +1,16 @@
+import {POLISHER_PRODUCT} from './product-identity.js';
+import {createPolisherNativeLauncher} from './native-launcher.js';
 // Optional cooperative launcher protocol v1. No Hub code or polling is needed.
 // A retained standalone button delegates to Hub, never a second business instance.
-export function createPolisherDualMode({host, frame, manifest, factory, icon, keepStandalone = false, onError = error => console.warn('[MieMie Polisher]', error)}) {
+export function createPolisherDualMode({host, frame, manifest, factory, icon, launcherStyles='', keepStandalone = false, onError = error => console.warn('['+POLISHER_PRODUCT.englishName+']', error)}) {
   const marker = '__MieMiePolisherSource';
   const previousSource = host[marker];
   if (previousSource && !previousSource.disposed) {
-    onError(Error('检测到重复的咩咩润色脚本；请只启用一个安装实例。'));
+    onError(Error('检测到重复的'+POLISHER_PRODUCT.launcherName+'脚本；请只启用一个安装实例。'));
     return {ready: Promise.resolve(false), settled: () => Promise.resolve(), dispose: () => Promise.resolve()};
   }
   const doc = host.document;
-  let disposed = false, queue = previousSource?.settled?.() || Promise.resolve(), attached = null, standalone = null, button = null, style = null;
+  let disposed = false, queue = previousSource?.settled?.() || Promise.resolve(), attached = null, standalone = null, native = null, shortcutSupported = false;
   let mode = 'starting';
   let handoff = null; // Page-only credentials remain private to this adapter.
   function report(error) { try { onError(error); } catch (_) {} }
@@ -16,20 +18,10 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, ke
     const hub = host.__MieMieHub;
     return hub?.apiVersion === 1 && typeof hub.extensions?.provide === 'function' ? hub : null;
   }
-  function removeButton() { if (button) button.onclick = null; button?.remove(); style?.remove(); button = style = null; }
+  function removeButton() {native?.dispose();native=null;}
   function capture(instance) { if (!disposed) handoff = instance?.captureSession?.() || null; }
   function restore(instance) { if (handoff && !disposed) {instance?.restoreSession?.(handoff); handoff = null;} }
-  function launcher(open) {
-    if (button) { button.onclick = () => void Promise.resolve().then(open).catch(report); return; }
-    style = doc.createElement('style');
-    style.textContent = '[data-miemie-polisher-standalone]{position:fixed;right:18px;bottom:26px;width:64px;height:64px;display:grid;place-items:center;box-sizing:border-box;overflow:hidden;border-radius:50%;border:1px solid #da72b4;background:#201332;box-shadow:0 4px 16px #0009,0 0 12px #da72b444;padding:0;cursor:pointer;z-index:9999;color:#fff;font-size:28px;transition:transform .16s,box-shadow .16s}[data-miemie-polisher-standalone]:hover{transform:translateY(-2px);box-shadow:0 6px 20px #000a,0 0 18px #da72b466}[data-miemie-polisher-standalone]:focus-visible{outline:2px solid #ffd0ee;outline-offset:3px}[data-miemie-polisher-standalone] img{width:100%;height:100%;object-fit:cover;border-radius:50%;pointer-events:none}';
-    button = doc.createElement('button'); button.type = 'button'; button.dataset.miemiePolisherStandalone = '';
-    button.title = manifest.name; button.setAttribute('aria-label', '打开' + manifest.name);
-    const img = doc.createElement('img'); img.src = icon; img.alt = ''; img.draggable = false;
-    img.onerror = () => { img.remove(); if (button) button.textContent = '🪶'; };
-    button.appendChild(img); button.onclick = () => void Promise.resolve().then(open).catch(report);
-    (doc.head || doc.documentElement).appendChild(style); (doc.body || doc.documentElement).appendChild(button);
-  }
+  function launcher(open) {return native ||= createPolisherNativeLauncher({host,icon,styles:launcherStyles,open,onError:report});}
   async function stopStandalone() {
     const session = standalone; standalone = null; removeButton();
     if (!session) return;
@@ -52,12 +44,13 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, ke
         if (!active() || session.panel || panel?.ownerDocument !== doc || !panel.isConnected) throw Error('润色面板挂载失败。');
         session.panel = panel; hide();
         const back = panel.querySelector('.mm-return');
-        if (back) { back.textContent = '收起'; back.onclick = hide; cleanups.push(() => {back.onclick = null;}); }
-        const key = event => { if (event.key === 'Escape' && !panel.hidden) hide(); };
+        if (back) { back.textContent = '收起'; back.onclick = () => api.closePanel(); cleanups.push(() => {back.onclick = null;}); }
+        const key = event => { if (event.key === 'Escape' && !panel.hidden) api.closePanel(); };
         doc.addEventListener('keydown', key); cleanups.push(() => doc.removeEventListener('keydown', key));
         return true;
       },
-      showPanel() { if (!active() || !session.panel) return false; session.panel.hidden = false; session.panel.inert = false; return true; },
+      showPanel() { if (!active() || !session.panel) return false; return native?.show(session.panel) ?? false; },
+      closePanel() {if(!active()||!session.panel)return false;return native?.close(session.panel) ?? false;},
       showMessage(text) { if (!active()) return false; report(String(text)); return true; },
     });
     try {
@@ -91,13 +84,20 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, ke
       // Registered first, therefore called last by the Runtime's LIFO cleanup.
       api.onCleanup(() => {api.signal.removeEventListener('abort', abort); connection.sessions.delete(session); complete();});
       instance = factory(api);
-      return {...instance, async activate() {await instance.activate?.(); if (!api.signal.aborted) restore(instance);}};
+      return {...instance, async activate() {
+        await instance.activate?.();
+        if (!api.signal.aborted) {
+          restore(instance);
+          shortcutSupported=typeof api.registerShortcutLauncher==='function';
+          if(shortcutSupported)api.registerShortcutLauncher({mount:({open})=>createPolisherNativeLauncher({host,icon,styles:launcherStyles,mode:'shortcut',open,onError:report})});
+        }
+      }};
     }
     const lease = hub.extensions.provide(manifest, trackedFactory);
     if (!lease.ok) {mode = 'error'; throw Error(lease.error || 'Hub 注册失败。');}
     connection.lease = lease; attached = connection; mode = 'hub';
     await lease.ready;
-    if (!disposed && attached === connection && currentHub() === hub && keepStandalone) launcher(async () => {
+    if (!disposed && attached === connection && currentHub() === hub && keepStandalone && !shortcutSupported) launcher(async () => {
       const result = await hub.extensions.open(manifest.id);
       if (result?.ok === false) throw Error(result.error || '扩展未启用，无法打开。');
     });

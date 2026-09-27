@@ -1,3 +1,4 @@
+import {POLISHER_PRODUCT} from '../product-identity.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -14,12 +15,13 @@ test('polishing and translation algorithms and default prompts match the toolbox
   assert.equal(pure, await read('tests/fixtures/toolbox-polisher-core.txt'));
 });
 
-test('original UI markup only differs in the approved product labels', async () => {
+test('original UI markup only differs in product labels and Surface header containment', async () => {
   const start = source.indexOf('root.innerHTML=`');
-  const markup = source.slice(start, source.indexOf('`;', start));
+  const markup = source.slice(start, source.indexOf('`;', start)).replace(/\$\{POLISHER_PRODUCT\.(\w+)\}/g,(_,key)=>POLISHER_PRODUCT[key]);
   const expected = (await read('tests/fixtures/toolbox-polisher-markup.html'))
     .replace('data-tool-icon="translation"', 'data-tool-icon="polisher"')
-    .replace('data-open>🐑 正文翻译', 'data-open>🐑 咩咩润色');
+    .replace('data-open>🐑 正文翻译', 'data-open>🐑 咩咩润色')
+    .replace('.mt-head{padding:16px', '.mt-head{position:relative;inset:auto;width:auto;z-index:auto;padding:16px');
   assert.equal(markup, expected);
 });
 
@@ -32,7 +34,7 @@ test('standalone artifact, manifest, version and permanent identities agree', as
   assert.equal(built.name, '咩咩润色工具 ' + pkg.version);
   assert.equal(await read('build/manifest.json'), await read('manifest.json'));
   assert.ok(built.content.includes('const POLISHER_MANIFEST=' + JSON.stringify(manifest) + ';'));
-  assert.ok(built.content.includes(source.replace(/^export /gm, '')));
+  assert.ok(built.content.includes(source.replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, '')));
   assert.equal(built.content.includes('miemie.translation'), false);
   assert.doesNotThrow(() => new vm.Script(built.content));
   await read(manifest.entry);

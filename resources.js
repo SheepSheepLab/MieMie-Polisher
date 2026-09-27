@@ -1,3 +1,4 @@
+import {POLISHER_PRODUCT} from './product-identity.js';
 // Keep the forwarding closure outside the tool's activation scope. A later
 // third-party wrapper may retain it; after disposal it must retain no tool state.
 export function installPolisherFetchHook(host, handler, previous = host.fetch) {
@@ -12,7 +13,7 @@ export function installPolisherFetchHook(host, handler, previous = host.fetch) {
 export function createPolisherResources(api, host) {
   let closed = false, completion;
   const cleanups = [], timers = new Map();
-  function add(fn) { if (closed) void Promise.resolve().then(fn).catch(error => console.warn('[MieMie Polisher]', error)); else cleanups.push(fn); return fn; }
+  function add(fn) { if (closed) void Promise.resolve().then(fn).catch(error => console.warn('['+POLISHER_PRODUCT.englishName+']', error)); else cleanups.push(fn); return fn; }
   function dispose() {
     if (closed) return completion;
     closed = true;
@@ -24,7 +25,7 @@ export function createPolisherResources(api, host) {
     return completion;
   }
   // Abort immediately, including while open/activation is still queued.
-  const abort = () => { void dispose()?.catch(e => console.warn('[MieMie Polisher]', e)); };
+  const abort = () => { void dispose()?.catch(e => console.warn('['+POLISHER_PRODUCT.englishName+']', e)); };
   api.signal.addEventListener('abort', abort, {once: true});
   add(() => api.signal.removeEventListener('abort', abort));
   api.onCleanup(dispose);
