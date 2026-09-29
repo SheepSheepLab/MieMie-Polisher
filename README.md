@@ -2,9 +2,13 @@
 
 咩咩润色工具属于由 SheepSheep 发起和创建的咩咩（MieMie）开源软件与社区生态。SheepSheep 是生态 Founder / 创始人；SheepSheepLab 是官方 GitHub 开发、维护与发布命名空间，本项目通过该命名空间维护和发布，并欢迎社区贡献者共同参与。
 
-MieMie Hub 的原生 Extension，当前本地候选版本 **1.2.0**（未发布），永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
+MieMie Hub 的原生 Extension，当前发布目标 **1.2.1**（发布流程进行中），永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
 
 本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.2.0 候选版完善独立悬浮球与 Hub 快捷入口，使用同一套原生打开/收起体验；Hub 出现或消失时自动切换，保持一个业务实例。原翻译／润色业务与数据结构不变。真实 Tavern、Safari/WebView 与手机触摸仍待人工验收。构建及测试不依赖 Hub 源码或另一个项目目录。
+
+## 1.2.1 发布说明
+
+仅统一面板标题中的产品名与版本显示格式，现为“咩咩润色工具 1.2.1”。详见 [1.2.1 发布说明](docs/RELEASE-1.2.1.md)。
 
 ## 开发与构建
 
@@ -21,8 +25,8 @@ npm test
 生成：
 
 ```text
-build/咩咩润色工具-Extension-1.2.0.json
-build/MieMie-Polisher-Extension-1.2.0.json
+build/咩咩润色工具-Extension-1.2.1.json
+build/MieMie-Polisher-Extension-1.2.1.json
 build/MieMie-Extension-update.json
 build/manifest.json
 build/miemie-polisher.js

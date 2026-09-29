@@ -5,7 +5,7 @@ import {JSDOM, VirtualConsole} from 'jsdom';
 const pkg = JSON.parse(await readFile(new URL('../package.json', import.meta.url)));
 const artifact = JSON.parse(await readFile(new URL('../build/MieMie-Polisher-Extension-' + pkg.version + '.json', import.meta.url)));
 const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url)));
-const assertTitle = f => assert.equal(f.h.document.querySelector('#meeme-translation .mm-tool-titles > strong').textContent, `${manifest.name} - ${manifest.version}`);
+const assertTitle = f => assert.equal(f.h.document.querySelector('#meeme-translation .mm-tool-titles > strong').textContent, `${manifest.name} ${manifest.version}`);
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 function environment() {

@@ -22,7 +22,7 @@ function setup(aborted = false) {
 test('factory mounts, opens and disposes through the Extension API contract', () => {
   const {instance, calls, title} = setup();
   instance.activate();
-  assert.equal(title.textContent, 'Fixture Polisher - 9.8.7');
+  assert.equal(title.textContent, 'Fixture Polisher 9.8.7');
   assert.equal(instance.open(), true);
   instance.deactivate();
   assert.deepEqual(calls, ['mount', 'attach', 'show', 'dispose']);
