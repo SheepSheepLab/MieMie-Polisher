@@ -40,10 +40,10 @@ function hubFixture(f, options = {}) {
   async function enable() {
     if (session || !source) return;
     const cleanups = [], controller = new AbortController();
-    const api = {signal: controller.signal, onCleanup: fn => cleanups.push(fn), attachPanel: panel => {panel.hidden = true; cleanups.push(() => panel.remove());}, showPanel: () => true};
+    const api = {signal: controller.signal, onCleanup: fn => cleanups.push(fn), attachPanel: panel => {panel.hidden = true; cleanups.push(() => panel.remove());}, showPanel: options.missingSurface ? undefined : () => true, closePanel: () => true};
     session = {controller, cleanups, instance: source(api)}; await session.instance.activate?.();
   }
-  const hub = {apiVersion: 2, ready, ...(options.legacy ? {} : {whenDisposed}), extensions: {
+  const hub = {apiVersion: 2, ready, ...(options.missingDisposed ? {} : {whenDisposed}), extensions: {
     provide(_m, factory) {assert.equal(source, undefined); source = factory; const ready = enable(); return {ok: true, ready, async release() {if (!disposed) {await disable(); source = undefined;}}};},
     async open() {if (!session) return {ok: false, error: 'disabled'}; try {await session.instance.open(); return {ok: true};} catch (e) {return {ok: false, error: e.message};}},
     disable, enable,
@@ -91,10 +91,10 @@ test('Hub disable and Runtime uninstall never resurrect standalone while Hub rem
   await hub.stop(); await source.settled(); assert.equal(f.count.active, 1); await source.dispose(); f.dom.window.close();
 });
 
-test('legacy Hub disposed event waits for asynchronous deactivate and final cleanup', async () => {
+test('API2 disposed event waits for asynchronous deactivate and final cleanup', async () => {
   let finish; let delay = false;
   const f = fixture({deactivateDelay: () => delay ? new Promise(resolve => {finish = resolve;}) : undefined});
-  const hub = hubFixture(f, {legacy: true}); hub.start(); const source = f.make(); await source.ready;
+  const hub = hubFixture(f); hub.start(); const source = f.make(); await source.ready;
   delay = true; const stopping = hub.stop(); await flush(); assert.equal(f.count.active, 1); assert.equal(f.count.activated, 1);
   finish(); delay = false; await stopping; await source.settled(); assert.equal(f.count.peak, 1); assert.equal(f.count.activated, 2);
   await source.dispose(); f.dom.window.close();
@@ -152,4 +152,26 @@ test('Standalone Escape and Back share close semantics and stale API cannot affe
  await f.api.showPanel();const replacement=f.host.document.querySelector('section');
  assert.notEqual(replacement,panel);assert.equal(api.closePanel(),false);assert.equal(replacement.hidden,false);
  await source.dispose();f.dom.window.close();
+});
+
+
+test('API2 missing required disposal boundary is reported without adopting the Hub',async()=>{
+ const f=fixture(),h=hubFixture(f,{missingDisposed:true});h.start();const s=f.make();await s.ready;
+ assert.equal(s.mode,'error');assert.equal(f.count.active,0);assert.match(f.errors.join(' '),/whenDisposed/);
+ await s.dispose();await h.stop();f.dom.window.close();
+});
+test('API2 optional Native capability may be absent without inventing a Shortcut',async()=>{
+ const f=fixture(),h=hubFixture(f);h.start();const s=f.make();await s.ready;
+ assert.equal(s.mode,'hub');assert.equal(f.count.active,1);assert.equal(f.host.document.querySelector('[data-miemie-polisher-native]'),null);
+ assert.deepEqual(f.errors,[]);await s.dispose();await h.stop();f.dom.window.close();
+});
+test('API2 failed registration ready result is never reported as successful integration',async()=>{
+ const f=fixture();f.host.__MieMieHub={apiVersion:2,whenDisposed:Promise.resolve(),extensions:{provide:()=>({ok:true,ready:Promise.resolve({ok:false,error:'fixture ready refused'}),release:async()=>{}})}};
+ const s=f.make();await s.ready;assert.equal(s.mode,'error');assert.equal(f.count.active,0);assert.match(f.errors.join(' '),/fixture ready refused/);await s.dispose();f.dom.window.close();
+});
+
+test('API2 missing mandatory Surface API fails before business creation',async()=>{
+ const f=fixture(),h=hubFixture(f,{missingSurface:true});h.start();const s=f.make();await s.ready;
+ assert.equal(s.mode,'error');assert.equal(f.count.active,0);assert.match(f.errors.join(' '),/required lifecycle\/Surface/);
+ await s.dispose();await h.stop();f.dom.window.close();
 });

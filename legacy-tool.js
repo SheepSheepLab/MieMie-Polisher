@@ -352,7 +352,7 @@ function transferProtected(target,reference,current,tags) {
   root.querySelector('[data-open]').hidden=true;
   root.querySelector('[data-close]').hidden=true;
   const back=doc.createElement('button');back.type='button';back.className='mm-return';back.textContent='返回';
-  back.onclick=resources.guard(()=>typeof api.closePanel==='function'?api.closePanel(presentationLease):host.__MieMieHub?.open());root.querySelector('section').appendChild(back);
+  back.onclick=resources.guard(()=>api.closePanel(presentationLease));root.querySelector('section').appendChild(back);
   (doc.documentElement||doc.body).appendChild(root);
   function fitViewport(){if(!root.style)return;const v=host.visualViewport;
     root.style.setProperty('--mt-vw',(v?.width||host.innerWidth||500)+'px');
@@ -518,9 +518,8 @@ function transferProtected(target,reference,current,tags) {
     const r={operation:prefs().mode==='polish'?'润色':'翻译',backup:b,identity:last().message,scope:scope(),controller:new host.AbortController()};
     try{const result=b.processed||(b.expected!==b.source?b.expected:null);if(!result){say('还没有可对比的处理结果。');return;}b.processed=result;const text=b.expected===b.source?result:b.source;await write(r,text);release();say(text===b.source?'当前显示原文；再点一次可查看处理结果。':'当前显示最近处理结果；再点一次可查看原文。');}catch(e){say(e.message);}
   }
-  // Keep the old hidden controls compatible, but route every UI entry through
-  // the adapter capability. Only old Hub versions need the hide fallback.
-  const closePanel=()=>typeof api.closePanel==='function'?api.closePanel(presentationLease):(panel.hidden=true);
+  // Existing hidden controls use the current Surface or Standalone close route.
+  const closePanel=()=>api.closePanel(presentationLease);
   el('open').onclick=resources.guard(()=>panel.hidden?api.showPanel(presentationLease):closePanel());
   el('close').onclick=resources.guard(closePanel);
   const tabs=['rules','terms','prompts','config','debug'];

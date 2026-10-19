@@ -37,7 +37,7 @@ function cooperativeHub(f) {
   let disposed = false;
   async function enable() {
     const cleanups=[], controller=new f.h.AbortController();
-    const api={signal:controller.signal,onCleanup:fn=>cleanups.push(fn),guard:fn=>(...args)=>controller.signal.aborted?undefined:fn(...args),attachPanel:panel=>{panel.hidden=true;panel.inert=true;cleanups.push(()=>{panel.hidden=true;panel.inert=true;});},showPanel:()=>{const p=f.h.document.querySelector('#meeme-translation section');p.hidden=false;p.inert=false;return true;}};
+    const api={signal:controller.signal,onCleanup:fn=>cleanups.push(fn),guard:fn=>(...args)=>controller.signal.aborted?undefined:fn(...args),attachPanel:panel=>{panel.hidden=true;panel.inert=true;cleanups.push(()=>{panel.hidden=true;panel.inert=true;});},showPanel:()=>{const p=f.h.document.querySelector('#meeme-translation section');p.hidden=false;p.inert=false;return true;},closePanel:()=>{const p=f.h.document.querySelector('#meeme-translation section');p.hidden=true;p.inert=true;return true;}};
     active={controller,cleanups,instance:source(api)}; await active.instance.activate();
   }
   async function disable() {const old=active;active=null;if(!old)return;old.controller.abort();await old.instance.deactivate();for(const fn of old.cleanups.reverse())await fn();}
