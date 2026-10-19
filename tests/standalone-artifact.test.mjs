@@ -41,7 +41,7 @@ function cooperativeHub(f) {
     active={controller,cleanups,instance:source(api)}; await active.instance.activate();
   }
   async function disable() {const old=active;active=null;if(!old)return;old.controller.abort();await old.instance.deactivate();for(const fn of old.cleanups.reverse())await fn();}
-  const hub={apiVersion:1,whenDisposed,open(){},extensions:{provide(_manifest,factory){source=factory;return{ok:true,ready:enable(),release:async()=>{if(!disposed)await disable();}};},open:async()=>active?.instance.open(),disable}};
+  const hub={apiVersion:2,whenDisposed,open(){},extensions:{provide(_manifest,factory){source=factory;return{ok:true,ready:enable(),release:async()=>{if(!disposed)await disable();}};},open:async()=>active?.instance.open(),disable}};
   return {hub,start(){f.h.__MieMieHub=hub;f.h.dispatchEvent(new f.h.CustomEvent('miemie:hub-ready',{detail:hub}));},async stop(){disposed=true;const done=disable();delete f.h.__MieMieHub;f.h.dispatchEvent(new f.h.CustomEvent('miemie:hub-disposed',{detail:hub}));await done;resolveDisposed();}};
 }
 

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {createPolisherDualMode} from '../launcher-adapter.js';
 
-const manifest = {id: 'test.fixture', name: 'Development Fixture', apiVersion: 1};
+const manifest = {id: 'test.fixture', name: 'Development Fixture', apiVersion: 2};
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function fixture(options = {}) {
   const dom = new JSDOM('<!doctype html><body></body>', {url: 'https://fixture.invalid/'}), host = dom.window;
@@ -43,7 +43,7 @@ function hubFixture(f, options = {}) {
     const api = {signal: controller.signal, onCleanup: fn => cleanups.push(fn), attachPanel: panel => {panel.hidden = true; cleanups.push(() => panel.remove());}, showPanel: () => true};
     session = {controller, cleanups, instance: source(api)}; await session.instance.activate?.();
   }
-  const hub = {apiVersion: 1, ready, ...(options.legacy ? {} : {whenDisposed}), extensions: {
+  const hub = {apiVersion: 2, ready, ...(options.legacy ? {} : {whenDisposed}), extensions: {
     provide(_m, factory) {assert.equal(source, undefined); source = factory; const ready = enable(); return {ok: true, ready, async release() {if (!disposed) {await disable(); source = undefined;}}};},
     async open() {if (!session) return {ok: false, error: 'disabled'}; try {await session.instance.open(); return {ok: true};} catch (e) {return {ok: false, error: e.message};}},
     disable, enable,
@@ -100,12 +100,13 @@ test('legacy Hub disposed event waits for asynchronous deactivate and final clea
   await source.dispose(); f.dom.window.close();
 });
 
-test('keepStandalone retains only launcher and delegates to Hub; open errors do not stop business', async () => {
+test('legacy keepStandalone cannot bypass API2 native preference, and open errors keep business alive', async () => {
   const f = fixture({keepStandalone: true, openError: true}), hub = hubFixture(f); hub.start(); const source = f.make(); await source.ready;
-  assert.equal(f.count.active, 1); f.host.document.querySelector('[data-miemie-polisher-standalone]').click(); await flush();
-  assert.equal(f.count.open, 1); assert.equal(f.count.active, 1); assert.equal(f.errors.length, 1);
-  await hub.disable(); f.host.document.querySelector('[data-miemie-polisher-standalone]').click(); await flush(); assert.equal(f.count.active, 0);
-  await source.dispose(); f.dom.window.close();
+  assert.equal(f.host.document.querySelector('[data-miemie-polisher-standalone]'), null);
+  const failed=await hub.hub.extensions.open();assert.equal(failed.ok,false);assert.match(failed.error,/test open failure/);
+  assert.equal(f.count.open,1);assert.equal(f.count.active,1);
+  await hub.disable();assert.equal((await hub.hub.extensions.open()).ok,false);assert.equal(f.count.active,0);
+  await source.dispose();f.dom.window.close();
 });
 
 test('duplicate scripts fail without changing existing instance or third party launchers', async () => {

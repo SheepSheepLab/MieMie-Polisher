@@ -1,6 +1,7 @@
+import {createAPI2NativeBridge} from './hub-api2.js';
 import {POLISHER_PRODUCT} from './product-identity.js';
 import {createPolisherNativeLauncher} from './native-launcher.js';
-// Optional cooperative launcher protocol v1. No Hub code or polling is needed.
+// API2 source lifecycle; the product retains its native window implementation.
 // A retained standalone button delegates to Hub, never a second business instance.
 export function createPolisherDualMode({host, frame, manifest, factory, icon, launcherStyles='', keepStandalone = false, onError = error => console.warn('['+POLISHER_PRODUCT.englishName+']', error)}) {
   const marker = '__MieMiePolisherSource';
@@ -10,13 +11,13 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
     return {ready: Promise.resolve(false), settled: () => Promise.resolve(), dispose: () => Promise.resolve()};
   }
   const doc = host.document;
-  let disposed = false, queue = previousSource?.settled?.() || Promise.resolve(), attached = null, standalone = null, native = null, shortcutSupported = false;
+  let disposed = false, queue = previousSource?.settled?.() || Promise.resolve(), attached = null, standalone = null, native = null;
   let mode = 'starting';
   let handoff = null; // Page-only credentials remain private to this adapter.
   function report(error) { try { onError(error); } catch (_) {} }
   function currentHub() {
     const hub = host.__MieMieHub;
-    return hub?.apiVersion === 1 && typeof hub.extensions?.provide === 'function' ? hub : null;
+    return hub?.apiVersion === 2 && typeof hub.extensions?.provide === 'function' ? hub : null;
   }
   function removeButton() {native?.dispose();native=null;}
   function capture(instance) { if (!disposed) handoff = instance?.captureSession?.() || null; }
@@ -83,13 +84,15 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
       api.signal.addEventListener('abort', abort, {once: true});
       // Registered first, therefore called last by the Runtime's LIFO cleanup.
       api.onCleanup(() => {api.signal.removeEventListener('abort', abort); connection.sessions.delete(session); complete();});
-      instance = factory(api);
+      const bridge = typeof api.registerNativeWindow === 'function' ? createAPI2NativeBridge(api, {
+        createLauncher: open => createPolisherNativeLauncher({host,icon,styles:launcherStyles,mode:'native',open,onError:report}), onError:report,
+      }) : null;
+      instance = factory(bridge?.api || api);
       return {...instance, async activate() {
         await instance.activate?.();
         if (!api.signal.aborted) {
           restore(instance);
-          shortcutSupported=typeof api.registerShortcutLauncher==='function';
-          if(shortcutSupported)api.registerShortcutLauncher({mount:({open})=>createPolisherNativeLauncher({host,icon,styles:launcherStyles,mode:'shortcut',open,onError:report})});
+          bridge?.register(instance);
         }
       }};
     }
@@ -97,10 +100,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
     if (!lease.ok) {mode = 'error'; throw Error(lease.error || 'Hub 注册失败。');}
     connection.lease = lease; attached = connection; mode = 'hub';
     await lease.ready;
-    if (!disposed && attached === connection && currentHub() === hub && keepStandalone && !shortcutSupported) launcher(async () => {
-      const result = await hub.extensions.open(manifest.id);
-      if (result?.ok === false) throw Error(result.error || '扩展未启用，无法打开。');
-    });
+
   }
   async function reconcile() {
     if (disposed) {await detachHub(); await stopStandalone(); mode = 'disposed'; return;}

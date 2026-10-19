@@ -190,6 +190,7 @@ function transferProtected(target,reference,current,tags) {
 }
 
   const host=window.parent,doc=host.document,ID='__meemeTranslation01';
+  let presentationLease;
   if(host[ID])throw Error('检测到正在运行的旧润色脚本，请停用旧版并刷新后再启用扩展。');
   const STORE={type:'extension',extension_id:'meeme_translation_v1'};
   const KEY_STORE='meeme_translation_key_v1';
@@ -351,7 +352,7 @@ function transferProtected(target,reference,current,tags) {
   root.querySelector('[data-open]').hidden=true;
   root.querySelector('[data-close]').hidden=true;
   const back=doc.createElement('button');back.type='button';back.className='mm-return';back.textContent='返回';
-  back.onclick=resources.guard(()=>typeof api.closePanel==='function'?api.closePanel():host.__MieMieHub?.open());root.querySelector('section').appendChild(back);
+  back.onclick=resources.guard(()=>typeof api.closePanel==='function'?api.closePanel(presentationLease):host.__MieMieHub?.open());root.querySelector('section').appendChild(back);
   (doc.documentElement||doc.body).appendChild(root);
   function fitViewport(){if(!root.style)return;const v=host.visualViewport;
     root.style.setProperty('--mt-vw',(v?.width||host.innerWidth||500)+'px');
@@ -519,8 +520,8 @@ function transferProtected(target,reference,current,tags) {
   }
   // Keep the old hidden controls compatible, but route every UI entry through
   // the adapter capability. Only old Hub versions need the hide fallback.
-  const closePanel=()=>typeof api.closePanel==='function'?api.closePanel():(panel.hidden=true);
-  el('open').onclick=resources.guard(()=>panel.hidden?api.showPanel():closePanel());
+  const closePanel=()=>typeof api.closePanel==='function'?api.closePanel(presentationLease):(panel.hidden=true);
+  el('open').onclick=resources.guard(()=>panel.hidden?api.showPanel(presentationLease):closePanel());
   el('close').onclick=resources.guard(closePanel);
   const tabs=['rules','terms','prompts','config','debug'];
   let activeTab=null;
@@ -654,17 +655,18 @@ function transferProtected(target,reference,current,tags) {
     const enter=event.type==='keydown'&&target?.closest?.('#send_textarea')&&event.key==='Enter'&&!event.shiftKey&&!event.isComposing&&event.keyCode!==229;
     const submit=event.type==='submit'&&target?.matches?.('#send_form');
     if(!click&&!enter&&!submit)return;
-    event.preventDefault();event.stopImmediatePropagation();void api.showPanel();say('正文正在'+run.operation+'，请等待完成或点击处理按钮取消后再发送。输入内容已保留。');
+    event.preventDefault();event.stopImmediatePropagation();void api.showPanel(presentationLease);say('正文正在'+run.operation+'，请等待完成或点击处理按钮取消后再发送。输入内容已保留。');
   }
   resources.listen(host,'click',blockUserSend,true);resources.listen(host,'keydown',blockUserSend,true);resources.listen(host,'submit',blockUserSend,true);
   async function before(type,options,dry){
     if(dry)return;
+    const requestLease=presentationLease;
     const start={scope:scope(),cancelled:false};pendingStart=start;
     // Await here, BEFORE the host assembles history/world info. Never throw to stop
     // generation: the host event emitter catches exceptions and keeps going.
     while(!disposed&&(run||blocked)){
       if(run)await run.promise;
-      if(blocked){void api.showPanel();say('下一轮发送正在等待：点击处理按钮取消等待，即可保留当前正文继续。');await new Promise(resolve=>waiters.push(resolve));}
+      if(blocked){void api.showPanel(requestLease);say('下一轮发送正在等待：点击处理按钮取消等待，即可保留当前正文继续。');await new Promise(resolve=>waiters.push(resolve));}
     }
     if(disposed)return;
     const item=last();generation={scope:start.scope,type,old:item?.message.mes,oldSwipe:item?.message.swipe_id??0,id:item?.id,stopped:start.cancelled||start.scope!==scope()};
@@ -704,7 +706,7 @@ function transferProtected(target,reference,current,tags) {
   try{el('protected-tags').value=protectedTagNames(config.protectedTags).map(n=>'<'+n+'>').join('\n');}catch(_){el('protected-tags').value=config.protectedTags;}
   el('protected-tags').oninput=()=>{config.protectedTags=el('protected-tags').value;persist();};
   el('base').value=config.base;el('model').value=config.model;el('tokens').value=config.maxTokens;el('timeout').value=config.timeoutSeconds;el('thinking-mode').value=config.thinkingMode;paintThinking();loadKey();paintCard();validBackup();showDebug();
-  host[ID]={open:()=>api.showPanel(),root,panel};
+  host[ID]={open:()=>api.showPanel(presentationLease),root,panel};
   // Lifecycle-only handoff: never persisted, exported or sent to the Hub.
   // Preserve a page-only key and uncommitted API form edits when changing the
   // launcher owner. In-flight work still follows the existing cancellation path.
@@ -728,5 +730,5 @@ function transferProtected(target,reference,current,tags) {
     el('auto').setAttribute('data-on',String(enabled));el('auto').setAttribute('aria-pressed',String(enabled));
     if(tabs.includes(state.activeTab))selectTab(state.activeTab);
   }
-  return {root,panel,captureSession,restoreSession};
+  return {root,panel,open(lease){presentationLease=lease;return api.showPanel(lease);},captureSession,restoreSession};
 }

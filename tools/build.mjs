@@ -22,7 +22,7 @@ const polisherAssets = {
   launcherStyles:await read('assets/native-launcher.css'),
 };
 const polisherParts = [];
-for (const file of ['product-identity.js', 'native-floating-presentation.js', 'native-launcher.js', 'resources.js', 'legacy-tool.js', 'polisher.js', 'launcher-adapter.js', 'entry.js']) polisherParts.push((await read(file)).replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, ''));
+for (const file of ['product-identity.js', 'native-floating-presentation.js', 'native-launcher.js', 'resources.js', 'legacy-tool.js', 'polisher.js', 'hub-api2.js', 'launcher-adapter.js', 'entry.js']) polisherParts.push((await read(file)).replace(/^import .*;\r?\n/gm, '').replace(/^export /gm, ''));
 const extensionContent = [
   '// MieMie-Extension-Build: ' + JSON.stringify({schemaVersion: 1, productId: polisherManifest.id, version: pkg.version, scriptId: extensionData.id, repository: polisherManifest.repository}),
   '// '+POLISHER_PRODUCT.englishName+' · '+POLISHER_PRODUCT.name+' Extension ' + polisherManifest.version,

@@ -10,7 +10,7 @@ export function createPolisherExtension(api) {
       tool.panel.querySelector('.mm-tool-titles > strong').textContent = `${POLISHER_MANIFEST.name} ${POLISHER_MANIFEST.version}`;
       api.attachPanel(tool.panel, {icon: POLISHER_ASSETS.icon});
     },
-    open() { return api.showPanel(); },
+    open(surfaceLease) { return tool?.open?.(surfaceLease) ?? api.showPanel(surfaceLease); },
     // Private, in-memory handoff between this script's two launcher modes.
     captureSession() { return tool?.captureSession(); },
     restoreSession(state) { tool?.restoreSession(state); },

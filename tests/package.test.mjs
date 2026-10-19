@@ -16,5 +16,5 @@ test('machine package metadata locks exact ASCII bytes, content, manifest and re
   assert.equal(meta.format, 'tavern-helper-script'); assert.equal(meta.tag, 'v' + pkg.version); assert.equal(meta.productId, manifest.id); assert.equal(meta.scriptId, script.id);
   const marker = JSON.parse(script.content.split('\n')[0].replace('// MieMie-Extension-Build: ', ''));
   assert.deepEqual(marker, {schemaVersion: 1, productId: manifest.id, version: pkg.version, scriptId: script.id, repository: manifest.repository});
-  assert.equal(manifest.author, 'SheepSheep'); assert.equal(manifest.license, 'GPL-3.0-or-later'); assert.deepEqual(manifest.hubApi, {min: 1, max: 1}); assert.equal(manifest.icon, 'assets/icon.png');
+  assert.equal(manifest.author, 'SheepSheep'); assert.equal(manifest.license, 'GPL-3.0-or-later'); assert.deepEqual(manifest.hubApi, {min: 2, max: 2}); assert.equal(manifest.icon, 'assets/icon.png');
 });

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "apiVersion": 1,
+  "apiVersion": 2,
   "id": "miemie.polisher",
   "name": "咩咩润色工具",
   "version": "1.2.1",
@@ -18,7 +18,7 @@
   "homepage": "https://github.com/SheepSheepLab/MieMie-Polisher",
   "license": "GPL-3.0-or-later",
   "hubApi": {
-    "min": 1,
-    "max": 1
+    "min": 2,
+    "max": 2
   }
 }
