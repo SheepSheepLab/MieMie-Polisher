@@ -1,5 +1,7 @@
 # Polisher GitHub Package
 
+> API2 开发分支补充：当前契约见 [HUB-API2.md](HUB-API2.md)。本页既有 API1 / Shortcut / 历史验收描述仅对应原版本；当前适配不恢复该 Runtime，测试边界与机器校验已独立迁移。
+
 正式来源：`https://github.com/SheepSheepLab/MieMie-Polisher`。Hub 从这个作者仓库的 Release 获取文件，不复制到 Hub 或 Registry 仓库。
 
 每次构建生成：
@@ -35,3 +37,7 @@
 Hash/Digest 只能验证附件完整性，不证明作者身份或代码安全。Registry 默认上架和机器安装兼容均不表示安全审核。
 
 所有新版本只使用 `MAJOR.MINOR.PATCH`。1.1.0 新增独立 Launcher 和 Hub 自动收纳；1.1.4 仅提升 PATCH，用于验收 Hub 0.6.2 的宿主名称版本同步修复，业务、Icon 与数据结构不变。以上为历史补丁说明。本轮 1.2.0 为本地 RC，使用已公开 1.1.4 Pre-release 的原始产物验证升级，旧发布不变。
+
+## 当前 API2 开发候选
+
+根 Manifest 为 `schemaVersion:1, apiVersion:2, hubApi:{min:2,max:2}`；Package、Metadata、Build Identity Schema 仍为 1，首行身份不增加 apiVersion。上方 API1 元数据示例及发行结果保留原版本范围。当前构建生成的完整附件与 content SHA-256 分别检查，公开包 data 为空；机器验证不证明 Runtime 已运行或服务器已保存。当前候选版本已获 Owner 批准为 1.3.0，正式构建生成新文件名／metadata／hash；禁止覆盖既有 1.2.1 资产，正式发行仍须单独授权。已测范围见 [Testing](TESTING.md#api2-pre-main2026-10-20)。

@@ -1,4 +1,4 @@
-// One external-orb presentation for Standalone and Hub Shortcut. Navigation,
+// One external-orb presentation for Standalone and API2 Native Window. Navigation,
 // hidden/inert state and business lifetime belong to the caller, never this module.
 export function createNativeFloatingPresentation({host,orb,bounds}) {
  const doc=host.document,animations=new Set(),cleanups=new Set();
