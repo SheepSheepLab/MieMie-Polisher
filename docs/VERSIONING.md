@@ -11,3 +11,7 @@
 本次 Polisher 候选版本为 `1.2.0`：原生悬浮球、Hub Shortcut 与单实例双模式能力属于兼容性 MINOR 增强，翻译/润色数据格式和 API v1 不变。仅生成本地候选文件，不创建 Tag 或 Release。分发文件为 `MieMie-Polisher-Extension-1.2.0.json`、`manifest.json` 与 `MieMie-Extension-update.json`，本地中文 JSON 字节一致。已公开 1.1.4 及更早历史发布保持不变。
 
 旧版本命名可能保留在源码提交历史中，不重写提交历史。版本规范化不改变永久 Extension ID `miemie.polisher`，也不修改旧数据兼容键 `meeme_translation_v1`、`meeme_translation_key_v1` 或翻译／润色业务。
+
+## 当前 API2 候选版本
+
+Owner 裁定本次版本为 **1.3.0**，保持 Major=1、Minor+1、Patch=0。package／lock／Manifest／脚本模板同步，界面、Build Identity、metadata与附件名由正式构建器生成；API2与各机器Schema1不随产品版本改变。上方1.2.0的阶段说明保持原意，1.2.1及其他已发布资产不替换，尚未创建1.3.0 Tag或Release。

@@ -40,4 +40,4 @@ Hash/Digest 只能验证附件完整性，不证明作者身份或代码安全�
 
 ## 当前 API2 开发候选
 
-根 Manifest 为 `schemaVersion:1, apiVersion:2, hubApi:{min:2,max:2}`；Package、Metadata、Build Identity Schema 仍为 1，首行身份不增加 apiVersion。上方 API1 元数据示例及发行结果保留原版本范围。当前构建生成的完整附件与 content SHA-256 分别检查，公开包 data 为空；机器验证不证明 Runtime 已运行或服务器已保存。当前候选内部版本尚未提升，禁止覆盖既有正式 1.2.1 资产；正式新版版本与发行须 Owner 批准。已测范围见 [Testing](TESTING.md#api2-pre-main2026-10-20)。
+根 Manifest 为 `schemaVersion:1, apiVersion:2, hubApi:{min:2,max:2}`；Package、Metadata、Build Identity Schema 仍为 1，首行身份不增加 apiVersion。上方 API1 元数据示例及发行结果保留原版本范围。当前构建生成的完整附件与 content SHA-256 分别检查，公开包 data 为空；机器验证不证明 Runtime 已运行或服务器已保存。当前候选版本已获 Owner 批准为 1.3.0，正式构建生成新文件名／metadata／hash；禁止覆盖既有 1.2.1 资产，正式发行仍须单独授权。已测范围见 [Testing](TESTING.md#api2-pre-main2026-10-20)。
