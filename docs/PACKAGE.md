@@ -37,3 +37,7 @@
 Hash/Digest 只能验证附件完整性，不证明作者身份或代码安全。Registry 默认上架和机器安装兼容均不表示安全审核。
 
 所有新版本只使用 `MAJOR.MINOR.PATCH`。1.1.0 新增独立 Launcher 和 Hub 自动收纳；1.1.4 仅提升 PATCH，用于验收 Hub 0.6.2 的宿主名称版本同步修复，业务、Icon 与数据结构不变。以上为历史补丁说明。本轮 1.2.0 为本地 RC，使用已公开 1.1.4 Pre-release 的原始产物验证升级，旧发布不变。
+
+## 当前 API2 开发候选
+
+根 Manifest 为 `schemaVersion:1, apiVersion:2, hubApi:{min:2,max:2}`；Package、Metadata、Build Identity Schema 仍为 1，首行身份不增加 apiVersion。上方 API1 元数据示例及发行结果保留原版本范围。当前构建生成的完整附件与 content SHA-256 分别检查，公开包 data 为空；机器验证不证明 Runtime 已运行或服务器已保存。当前候选内部版本尚未提升，禁止覆盖既有正式 1.2.1 资产；正式新版版本与发行须 Owner 批准。已测范围见 [Testing](TESTING.md#api2-pre-main2026-10-20)。

@@ -1,5 +1,7 @@
 # MieMie 官方项目版本规范
 
+> 版本范围：下文保留原 1.1.x／1.2.x 阶段的设计、数据及验收记录；其中旧 Hub API1／Shortcut／closePanel fallback 不是本分支的生产 Runtime。现行 API2 接入见 [HUB-API2](HUB-API2.md)，历史内容与结论不追溯修改。
+
 从本次发布开始，SheepSheep 维护的 MieMie 官方项目只使用无前导零的 `MAJOR.MINOR.PATCH`，例如 `1.0.1`、`1.0.2`。不使用 `-alpha.N`、`-beta.N`、`-hub.N`、`-build.N` 或 `+build` 等任何后缀。
 
 内部快速迭代直接增加 PATCH；后续功能和兼容性变化按 SemVer 使用 MINOR / MAJOR。Hub 与各 Extension 独立维护自己的版本，不联动提升。

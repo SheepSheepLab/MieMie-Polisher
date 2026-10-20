@@ -68,3 +68,11 @@ that case. Their capability checks do not dispatch an API1 implementation.
 Standalone uses the extension's own close route and data, independently of Hub.
 Historical API1 fixtures and published packages remain evidence only, outside
 the current production build closure.
+
+## 润色工具的实际接入与状态交接
+
+入口链为 `entry.js → createPolisherDualMode（launcher-adapter.js）→ currentHub → extensions.provide → trackedFactory → createPolisherExtension（polisher.js）`。只采用 API2；必需 signal／onCleanup／attachPanel／showPanel／closePanel、Source ready/release 与 whenDisposed 缺失时报告失败，不能伪称集成。`hub-api2.js` 的 `createAPI2NativeBridge` 仅在可选 registerNativeWindow 存在时注册；缺少它仍可使用 Surface，不宣称已提供 Native。
+
+Surface 的 open／close 使用捕获 Lease；Native bridge 把同一 instance.open 的 Lease 路由到产品自身 Launcher。release 同步使 nativeLease 失效并取消动画；入口 OFF 只移除展示，不卸载业务。润色、翻译、发送拦截、配置、提示词与资源清理由原工厂负责。
+
+Standalone 与 Hub 之间采用串行 remount：先 captureSession、abort、deactivate 和 LIFO cleanup，再创建下一会话。页面内未记住 Key、未保存接口字段、tab 和开关私有交接，不持久化给 Hub；进行中的请求取消，不复制到新会话。同一 Hub Session 内蜂窝／Native 入口共享一份业务和面板，不把跨宿主 remount 误写成所有时候同一个对象。当前验收见 [TESTING](TESTING.md#api2-pre-main2026-10-20)，最低要求及待发行资料见 [新版发行草稿](RELEASE-API2-DRAFT.md)。

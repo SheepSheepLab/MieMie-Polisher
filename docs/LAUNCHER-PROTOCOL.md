@@ -60,3 +60,7 @@ createPolisherDualMode({
 Hub/独立模式切换先清理再激活；正在进行的业务请求会安全取消，不尝试无刷新迁移正在等待的网络请求。持久业务数据继续使用原有存储。Polisher 额外通过私有内存 handoff 保留本页 Key、未保存接口输入、当前 tab 和自动开关，不写入 localStorage、Manifest 或日志。完全停止/重载 Polisher 自身脚本后，本页未持久信息按原语义丢弃。关闭 Polisher 自身的酒馆助手脚本时会彻底撤回来源、监听、球和业务 Hook。
 
 Hub 自更新、Extension 更新以及真正宿主脚本卸载由 Hub 的包管理实现；此适配器不自行下载或修改脚本。
+
+## 当前 API2 适配范围
+
+上方 `keepStandalone` 与 Shortcut 示例属于原 API1 协议记录，不是当前 `createPolisherDualMode` 的参数。本分支只采用 API2；Hub Native 入口由 `registerNativeWindow` 和用户偏好管理，Standalone 仍由本产品管理。Source 的 `ready/release`、Hub 的 `whenDisposed` 与自己的最终 cleanup 共同约束交接；窗口返回不撤回 Source。详细实现和可选能力见 [HUB-API2](HUB-API2.md)。

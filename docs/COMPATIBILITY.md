@@ -1,5 +1,7 @@
 # 产品身份、旧数据与生命周期
 
+> 版本范围：下文保留原 1.1.x／1.2.x 阶段的设计、数据及验收记录；其中旧 Hub API1／Shortcut／closePanel fallback 不是本分支的生产 Runtime。现行 API2 接入见 [HUB-API2](HUB-API2.md)，历史内容与结论不追溯修改。
+
 ## 正式身份
 
 | 项目 | 值 |
