@@ -46,7 +46,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
         session.panel = panel; hide();
         const back = panel.querySelector('.mm-return');
         if (back) { back.textContent = '收起'; back.onclick = () => api.closePanel(); cleanups.push(() => {back.onclick = null;}); }
-        const key = event => { if (event.key === 'Escape' && !panel.hidden) api.closePanel(); };
+        const key = event => { if (event.key === 'Escape' && !event.isComposing && event.keyCode !== 229 && !panel.hidden) api.closePanel(); };
         doc.addEventListener('keydown', key); cleanups.push(() => doc.removeEventListener('keydown', key));
         return true;
       },

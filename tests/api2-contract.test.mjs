@@ -17,3 +17,13 @@ test('API2 source release and Hub restart keep one business instance and page-on
 test('API2 Native Escape follows product close semantics without deactivating its business',async t=>{const f=fixture(t);await f.source.ready;const h=await f.attach();h.preference(true);await h.openNative();await flush();const panel=f.instances.at(-1).panel;const composing=new f.host.KeyboardEvent('keydown',{key:'Escape',isComposing:true,bubbles:true,cancelable:true});panel.dispatchEvent(composing);assert.equal(composing.defaultPrevented,false);assert.equal(panel.hidden,false);panel.dispatchEvent(new f.host.KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));await flush();assert.equal(panel.hidden,true);assert.equal(f.count.active,1);});
 
 test('API2 new Native lease places an initially visible restored root; repeated open keeps its session',async t=>{const f=fixture(t);await f.source.ready;const h=await f.attach(),panel=f.instances.at(-1).panel;h.preference(true);panel.hidden=false;panel.inert=false;panel.dataset.surfaceState='closed';await h.openNative();await flush();assert.equal(panel.dataset.surfaceState,'open');assert.equal(panel.hidden,false);const style=panel.style.cssText;await h.openNative();await flush();assert.equal(panel.style.cssText,style);assert.equal(f.count.peak,1);});
+
+for(const mode of ['standalone','native'])test(`Safari IME Escape keyCode229 does not close ${mode} or cancel business`,async t=>{
+ const f=fixture(t);await f.source.ready;let h;
+ if(mode==='native'){h=await f.attach();h.preference(true);await h.openNative();}else await f.apis.at(-1).showPanel();
+ await flush();const p=f.instances.at(-1).panel;
+ for(const init of [{key:'Escape',isComposing:true,keyCode:229},{key:'Escape',isComposing:false,keyCode:229}]){
+  const e=new f.host.KeyboardEvent('keydown',{...init,bubbles:true,cancelable:true});p.dispatchEvent(e);await flush();assert.equal(p.hidden,false);assert.equal(e.defaultPrevented,false);
+ }
+ p.dispatchEvent(new f.host.KeyboardEvent('keydown',{key:'Escape',keyCode:27,bubbles:true,cancelable:true}));await flush();assert.equal(p.hidden,true);assert.equal(f.count.active,1);
+});

@@ -33,7 +33,7 @@ export function createAPI2NativeBridge(api, {createLauncher, onError}) {
       const doc=panel?.ownerDocument;
       const key=event=>{
         const lease=nativeLease;
-        if(event.key!=='Escape'||event.defaultPrevented||event.isComposing||!nativeCurrent(lease))return;
+        if(event.key!=='Escape'||event.defaultPrevented||event.isComposing||event.keyCode===229||!nativeCurrent(lease))return;
         const origin=native?.getOrigin(),path=event.composedPath();
         if(!path.includes(panel)&&!path.includes(origin)&&!panel.contains(doc.activeElement))return;
         if(panel.querySelector('dialog[open]'))return;
