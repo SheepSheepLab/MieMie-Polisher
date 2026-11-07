@@ -1,6 +1,6 @@
 import {createNativeFloatingPresentation} from './native-floating-presentation.js';
 import {POLISHER_PRODUCT} from './product-identity.js';
-// One native presentation shared by Standalone and the opt-in Hub shortcut.
+// One product-owned presentation for Standalone and API2 Native Window.
 export function createPolisherNativeLauncher({host,icon,styles='',mode='standalone',open,onError=()=>{}}){
  const doc=host.document,key='miemie_polisher_dock_v1';
  const tuning=Object.freeze({size:64,dragThreshold:7});
@@ -11,7 +11,16 @@ export function createPolisherNativeLauncher({host,icon,styles='',mode='standalo
  image.onerror=()=>{image.remove();orb.textContent='🪶';};
  (doc.head||doc.documentElement).append(style);(doc.body||doc.documentElement).append(orb);
  let dock={side:'right',ratio:.6},drag=null,suppress=false,disposed=false,queue=Promise.resolve(),pending=null,activePanel=null;
- let followFrame=0;
+ let followFrame=0, epoch=0, ownedPanel=null, savedStyles=null;
+ const ownedFields=['position','left','top','right','bottom','transform','width','height','max-height','transform-origin'];
+ function retain(panel){if(ownedPanel===panel)return;ownedPanel=panel;savedStyles=ownedFields.map(k=>[k,panel.style.getPropertyValue(k),panel.style.getPropertyPriority(k)]);}
+ function release(){
+  ++epoch;pending=null;queue=Promise.resolve();
+  const pointer=drag;drag=null;if(pointer)try{orb.releasePointerCapture(pointer.id);}catch(_){}
+  suppress=true;presentation.release();if(followFrame)caf(followFrame);followFrame=0;
+  if(ownedPanel){ownedPanel.hidden=true;ownedPanel.inert=true;ownedPanel.dataset.surfaceState='closed';for(const[k,v,p]of savedStyles){if(v)ownedPanel.style.setProperty(k,v,p);else ownedPanel.style.removeProperty(k);}}
+  ownedPanel=null;savedStyles=null;activePanel=null;
+ }
  const presentation=createNativeFloatingPresentation({host,orb,bounds});
  const raf=host.requestAnimationFrame?.bind(host)||((fn)=>host.setTimeout(fn,16)),caf=host.cancelAnimationFrame?.bind(host)||host.clearTimeout.bind(host);
  function follow(){if(followFrame)return;followFrame=raf(()=>{followFrame=0;presentation.follow();});}
@@ -31,27 +40,28 @@ export function createPolisherNativeLauncher({host,icon,styles='',mode='standalo
  function move(e){if(!drag||drag.id!==e.pointerId)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>tuning.dragThreshold)drag.moved=true;if(!drag.moved)return;e.preventDefault();const b=drag.bounds;drag.leftNow=Math.max(b.left,Math.min(b.right,drag.left+dx));drag.topNow=Math.max(b.top,Math.min(b.bottom,drag.top+dy));orb.style.transform=`translate(${drag.leftNow-drag.left}px,${drag.topNow-drag.top}px)`;follow();}
  function end(e){if(!drag||e.pointerId!==drag.id)return;const old=drag;drag=null;suppress=old.moved;try{orb.releasePointerCapture(e.pointerId);}catch(_){}if(old.moved){const b=bounds();dock={side:old.leftNow<(b.left+b.right)/2?'left':'right',ratio:Math.max(0,Math.min(1,(old.topNow-b.top)/Math.max(1,b.bottom-b.top)))};try{host.localStorage.setItem(key,JSON.stringify(dock));}catch(_){}place();settlePosition();}}
  function abort(e){if(!drag||drag.id!==e.pointerId)return;drag=null;suppress=true;place();settlePosition();}
- function click(e){if(suppress&&e.detail!==0){suppress=false;e.preventDefault();return;}suppress=false;if(!disposed)void Promise.resolve().then(open).catch(onError);}
+ function click(e){if(suppress&&e.detail!==0){suppress=false;e.preventDefault();return;}suppress=false;if(!disposed)void Promise.resolve().then(()=>!disposed&&open()).catch(onError);}
  const listeners={pointerdown:down,pointermove:move,pointerup:end,pointercancel:abort,lostpointercapture:abort,click};
  for(const[name,fn]of Object.entries(listeners))orb.addEventListener(name,fn);
  for(const name of ['resize','orientationchange'])host.addEventListener(name,resize);
  host.visualViewport?.addEventListener('resize',resize);host.visualViewport?.addEventListener('scroll',resize);place();
- function transition(panel,opening){
-  if(disposed||!panel)return Promise.resolve(false);
+ function transition(panel,opening,isCurrent=()=>true){
+  const serial=epoch,valid=()=>!disposed&&serial===epoch&&isCurrent();
+  if(!valid()||!panel)return Promise.resolve(false);
   if(pending?.opening===opening)return pending.task;
   const task=queue.then(async()=>{
-   if(disposed)return false;
+   if(!valid())return false;
    if(opening&&!panel.hidden){panel.focus?.({preventScroll:true});return true;}
    if(!opening&&panel.hidden)return true;
-   activePanel=panel;panel.hidden=false;panel.inert=true;panel.dataset.surfaceState=opening?'opening':'closing';
+   retain(panel);activePanel=panel;panel.hidden=false;panel.inert=true;panel.dataset.surfaceState=opening?'opening':'closing';
    await presentation.run(panel,opening);
-   if(disposed)return false;
+   if(!valid())return false;
    panel.hidden=!opening;panel.inert=!opening;panel.dataset.surfaceState=opening?'open':'closed';
    if(opening)panel.focus?.({preventScroll:true});else{activePanel=null;presentation.release();orb.focus({preventScroll:true});}
    return true;
   });queue=task.catch(onError);pending={opening,task};void task.finally(()=>{if(pending?.task===task)pending=null;}).catch(()=>{});return task;
  }
- return {presentation,getOrigin:()=>disposed?null:orb,setActive:active=>{if(active)orb.dataset.surfaceActive='true';else delete orb.dataset.surfaceActive;},highlight:()=>orb.focus({preventScroll:true}),show:panel=>transition(panel,true),close:panel=>transition(panel,false),
-  dispose(){if(disposed)return;disposed=true;presentation.dispose();if(followFrame)caf(followFrame);followFrame=0;if(activePanel){activePanel.hidden=true;activePanel.inert=true;}for(const[name,fn]of Object.entries(listeners))orb.removeEventListener(name,fn);for(const name of ['resize','orientationchange'])host.removeEventListener(name,resize);host.visualViewport?.removeEventListener('resize',resize);host.visualViewport?.removeEventListener('scroll',resize);orb.remove();style.remove();},
+ return {presentation,getOrigin:()=>disposed?null:orb,setActive:active=>{if(active)orb.dataset.surfaceActive='true';else delete orb.dataset.surfaceActive;},highlight:()=>orb.focus({preventScroll:true}),show:(panel,isCurrent)=>transition(panel,true,isCurrent),close:(panel,isCurrent)=>transition(panel,false,isCurrent),release,
+  dispose(){if(disposed)return;release();disposed=true;presentation.dispose();if(followFrame)caf(followFrame);followFrame=0;if(activePanel){activePanel.hidden=true;activePanel.inert=true;}for(const[name,fn]of Object.entries(listeners))orb.removeEventListener(name,fn);for(const name of ['resize','orientationchange'])host.removeEventListener(name,resize);host.visualViewport?.removeEventListener('resize',resize);host.visualViewport?.removeEventListener('scroll',resize);orb.remove();style.remove();},
  };
 }
