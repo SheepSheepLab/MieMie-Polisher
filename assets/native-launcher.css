@@ -1,6 +1,21 @@
 [data-miemie-polisher-native]{--mp-motion-hero:760ms;--mp-blur-hero:14px;--mp-hero-backdrop:#201332b8;--mp-ease-hero:cubic-bezier(.4,0,.2,1);--mp-motion-open:520ms;--mp-motion-close:460ms;--mp-ease-surface:cubic-bezier(.32,.72,0,1);--mp-safe-top:env(safe-area-inset-top,0px);--mp-safe-bottom:env(safe-area-inset-bottom,0px);--mp-safe-left:env(safe-area-inset-left,0px);--mp-safe-right:env(safe-area-inset-right,0px);display:grid;place-items:center;box-sizing:border-box;overflow:hidden;border-radius:50%;border:1px solid #da72b4;background:#201332;box-shadow:0 4px 16px #0009,0 0 12px #da72b444;padding:0;cursor:grab;z-index:2147483300;color:#fff;font-size:28px;touch-action:none;user-select:none;-webkit-user-select:none;transition:scale .16s,box-shadow .16s}
 [data-miemie-polisher-native] img{width:100%;height:100%;object-fit:cover;border-radius:50%;pointer-events:none}
-@media(hover:hover){[data-miemie-polisher-native]:hover{scale:1.06;box-shadow:0 6px 20px #000a,0 0 18px #da72b466}}
-[data-miemie-polisher-native]:active{scale:.95;cursor:grabbing}
+@media(hover:hover){[data-miemie-polisher-native]:not([data-mp-tucked]):hover{scale:1.06;box-shadow:0 6px 20px #000a,0 0 18px #da72b466}}
+[data-miemie-polisher-native]:active{cursor:grabbing}
+[data-miemie-polisher-native]:not([data-mp-tucked]):active{scale:.95}
 [data-miemie-polisher-native]:focus-visible{outline:2px solid #ffd0ee;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){[data-miemie-polisher-native]{transition:none}}
+
+[data-miemie-polisher-native][data-mp-tucked]{transition:translate 190ms ease-out,border-color .16s,box-shadow .16s}
+[data-miemie-polisher-native][data-mp-tucked]:not([data-mp-gesture],[data-mp-expanded]):is([data-mp-hover],[data-mp-peek],:focus-visible){translate:var(--mp-peek) 0}
+[data-miemie-polisher-native][data-mp-gesture]{transition:none}
+[data-miemie-polisher-native][data-mp-ready]{border-color:#f4bce2}
+[data-miemie-polisher-native][data-mp-gesture=grabbed]{cursor:grabbing;border-color:#f4bce2;box-shadow:0 0 0 4px #c47eae55,0 4px 16px #0009;animation:mm-mp-grab 200ms ease-out}
+@keyframes mm-mp-grab{from{scale:.92}to{scale:1}}
+[data-polisher-pull]{position:fixed;display:block;z-index:2147483299;overflow:hidden;pointer-events:none}
+[data-polisher-pull][hidden]{display:none!important}
+[data-polisher-pull] path{fill-opacity:.64;stroke:#c47eae57;stroke-width:1;transition:fill-opacity .11s,stroke .11s}
+[data-polisher-pull][data-ready] path{fill-opacity:1;stroke:#f4bce294}
+@media(prefers-reduced-motion:reduce){[data-miemie-polisher-native],[data-polisher-pull] path{transition:none!important;animation:none!important}}
+/* The product's modal stays above its floating button on narrow screens. */
+html:has(#meeme-translation > section:not([hidden]) .mm-launcher-settings-layer:not([hidden])) > [data-miemie-polisher-native]{z-index:9999}

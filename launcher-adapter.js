@@ -1,4 +1,5 @@
 import {createAPI2NativeBridge} from './hub-api2.js';
+import {createLauncherAppearance, dismissLauncherSettings} from './launcher-settings.js';
 import {POLISHER_PRODUCT} from './product-identity.js';
 import {createPolisherNativeLauncher} from './native-launcher.js';
 // API2 source lifecycle; the product retains its native window implementation.
@@ -11,6 +12,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
     return {ready: Promise.resolve(false), settled: () => Promise.resolve(), dispose: () => Promise.resolve()};
   }
   const doc = host.document;
+  const appearance = createLauncherAppearance(host);
   let disposed = false, queue = previousSource?.settled?.() || Promise.resolve(), attached = null, standalone = null, native = null;
   let mode = 'starting';
   let handoff = null; // Page-only credentials remain private to this adapter.
@@ -22,7 +24,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
   function removeButton() {native?.dispose();native=null;}
   function capture(instance) { if (!disposed) handoff = instance?.captureSession?.() || null; }
   function restore(instance) { if (handoff && !disposed) {instance?.restoreSession?.(handoff); handoff = null;} }
-  function launcher(open) {return native ||= createPolisherNativeLauncher({host,icon,styles:launcherStyles,open,onError:report});}
+  function launcher(open, requestBack) {return native ||= createPolisherNativeLauncher({host,icon,styles:launcherStyles,appearance,open,requestBack,onError:report});}
   async function stopStandalone() {
     const session = standalone; standalone = null; removeButton();
     if (!session) return;
@@ -46,7 +48,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
         session.panel = panel; hide();
         const back = panel.querySelector('.mm-return');
         if (back) { back.textContent = '收起'; back.onclick = () => api.closePanel(); cleanups.push(() => {back.onclick = null;}); }
-        const key = event => { if (event.key === 'Escape' && !event.isComposing && event.keyCode !== 229 && !panel.hidden) api.closePanel(); };
+        const key = event => { if (event.key === 'Escape' && !event.defaultPrevented && !event.isComposing && event.keyCode !== 229 && !panel.hidden) api.closePanel(); };
         doc.addEventListener('keydown', key); cleanups.push(() => doc.removeEventListener('keydown', key));
         return true;
       },
@@ -55,10 +57,13 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
       showMessage(text) { if (!active()) return false; report(String(text)); return true; },
     });
     try {
-      session.instance = factory(api); await session.instance.activate?.();
+      session.instance = factory(api, appearance); await session.instance.activate?.();
       if (!active()) return;
       restore(session.instance);
-      mode = 'standalone'; launcher(() => session.instance.open?.());
+      mode = 'standalone'; launcher(() => session.instance.open?.(), () => {
+        if (!active() || !session.panel) return false;
+        return dismissLauncherSettings(session.panel) || (!session.panel.querySelector('dialog[open]') && api.closePanel());
+      });
     } catch (error) { await stopStandalone(); mode = 'error'; report(error); }
   }
   async function detachHub() {
@@ -88,9 +93,9 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
       // Registered first, therefore called last by the Runtime's LIFO cleanup.
       api.onCleanup(() => {api.signal.removeEventListener('abort', abort); connection.sessions.delete(session); complete();});
       const bridge = typeof api.registerNativeWindow === 'function' ? createAPI2NativeBridge(api, {
-        createLauncher: open => createPolisherNativeLauncher({host,icon,styles:launcherStyles,mode:'native',open,onError:report}), onError:report,
+        createLauncher: (open, requestBack) => createPolisherNativeLauncher({host,icon,styles:launcherStyles,appearance,mode:'native',open,requestBack,onError:report}), onError:report,
       }) : null;
-      instance = factory(bridge?.api || api);
+      instance = factory(bridge?.api || api, appearance);
       return {...instance, async activate() {
         await instance.activate?.();
         if (!api.signal.aborted) {

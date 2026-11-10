@@ -1,10 +1,12 @@
 # MieMie Polisher · 咩咩润色工具
 
-> **1.3.0** 支持 Hub 0.9.0 的 Extension API2，机器包沿用 Package v1。正式安装包见 [GitHub Release](https://github.com/SheepSheepLab/MieMie-Polisher/releases/tag/v1.3.0)，运行与安装的独立验证见 [Hub API2 接入说明](docs/HUB-API2.md)。
+> **1.4.0** 支持 Hub 0.9.0 的 Extension API2，机器包沿用 Package v1。正式安装包见 [GitHub Release](https://github.com/SheepSheepLab/MieMie-Polisher/releases/tag/v1.4.0)，运行与安装的独立验证见 [Hub API2 接入说明](docs/HUB-API2.md)。
+
+浮球可在工具内调整大小并启用潜航模式。潜航后向屏幕内侧拉动可打开，原地长按约 0.9 秒可拖动。面板打开时位于浮球之上，窄屏会模糊背景并挡住下层点击。
 
 咩咩润色工具属于由 SheepSheep 发起和创建的咩咩（MieMie）开源软件与社区生态。SheepSheep 是生态 Founder / 创始人；SheepSheepLab 是官方 GitHub 开发、维护与发布命名空间，本项目通过该命名空间维护和发布，并欢迎社区贡献者共同参与。
 
-MieMie Hub 的原生 Extension，当前版本为 **1.3.0**，此前正式版本为 **1.2.1**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
+MieMie Hub 的原生 Extension，当前版本为 **1.4.0**，此前正式版本为 **1.3.0**，永久 ID **`miemie.polisher`**。完整保留翻译／润色、原 UI、提示词库、API／模型配置、术语、标签保护、备份恢复、发送原文及调试能力。
 
 本项目可在酒馆助手中独立运行，也可通过可选 Launcher 协议接入 Hub。1.2.0 候选版完善独立悬浮球与 Hub 快捷入口，使用同一套原生打开/收起体验；Hub 出现或消失时自动切换，保持一个业务实例。原翻译／润色业务与数据结构不变。以上 1.2.0 阶段描述保留原范围；本分支 2026-10-20 的真实桌面 ST／Safari 证据与物理移动 Pending 见 [Testing](docs/TESTING.md#api2-pre-main2026-10-20)。构建及测试不依赖 Hub 源码或另一个项目目录。
 
@@ -27,8 +29,8 @@ npm test
 生成：
 
 ```text
-build/咩咩润色工具-Extension-1.3.0.json
-build/MieMie-Polisher-Extension-1.3.0.json
+build/咩咩润色工具-Extension-1.4.0.json
+build/MieMie-Polisher-Extension-1.4.0.json
 build/MieMie-Extension-update.json
 build/manifest.json
 build/miemie-polisher.js
@@ -36,7 +38,7 @@ build/miemie-polisher.js
 
 前者用于酒馆助手导入，`manifest.json` 是声明副本，JavaScript 文件用于检查。`build/`、`node_modules/`、`test-results/` 均忽略，不是基础构建必须提交的文件。
 
-版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；本分支仅依赖 Extension API2，已发布 1.2.1 的 API1 记录保持原版本范围。正式附件 `MieMie-Polisher-Extension-1.3.0.json` 与本地中文文件名的产物内容相同。
+版本由本项目 `package.json` 与根目录 `manifest.json` 共同声明；更新时二者必须一致，构建会检查。所有新的官方版本必须使用无前导零的 `MAJOR.MINOR.PATCH`，详见 [版本规范](docs/VERSIONING.md)。Hub 版本不参与决定 Polisher 版本；本分支仅依赖 Extension API2，已发布 1.2.1 的 API1 记录保持原版本范围。正式附件 `MieMie-Polisher-Extension-1.4.0.json` 与本地中文文件名的产物内容相同。
 
 ## 目录职责
 
@@ -87,4 +89,4 @@ Copyright © 2026 SheepSheep。社区贡献者（Community Contributors）保留
 
 ## API2 新版候选审核
 
-最低 Runtime 要求、Standalone 与 Package v1 边界见 [1.3.0 正式发行说明](https://github.com/SheepSheepLab/MieMie-Polisher/releases/tag/v1.3.0)。开发候选的既有结果见 [API2 Pre-Main](docs/TESTING.md#api2-pre-main2026-10-20)，正式在线安装与更新另行验收。
+最低 Runtime 要求、Standalone 与 Package v1 边界见 [1.4.0 正式发行说明](https://github.com/SheepSheepLab/MieMie-Polisher/releases/tag/v1.4.0)。开发候选的既有结果见 [API2 Pre-Main](docs/TESTING.md#api2-pre-main2026-10-20)，正式在线安装与更新另行验收。

@@ -39,9 +39,9 @@ export function createNativeFloatingPresentation({host,orb,bounds}) {
    ]);}finally{cleanup();}
   }};
  }
- async function animateNative(element,frames,options){const a=element.animate(frames,{...options,fill:'both'});animations.add(a);try{await a.finished;}catch(_){}finally{a.cancel();animations.delete(a);}}
+ async function animateNative(element,frames,options,startTime){const a=element.animate(frames,{...options,fill:'both'});animations.add(a);if(startTime!=null)a.startTime=startTime;try{await a.finished;}catch(_){}finally{a.cancel();animations.delete(a);}}
 
- async function run(panel,opening){
+ async function run(panel,opening,returnDock){
   if(disposed||!orb.isConnected)return false;
    const epoch=generation;activePanel=panel;fit(panel);
    const header=opening?panel.querySelector('[data-tool-icon]'):null,hero=header&&panel.animate&&!reduced()?prepareHeader(panel,header):null;
@@ -52,13 +52,20 @@ export function createNativeFloatingPresentation({host,orb,bounds}) {
     const small={transform:`translate(${o.left-r.left}px,${o.top-r.top}px) scale(${o.width/r.width},${o.height/r.height})`,opacity:0,clipPath:'inset(0 round 50%)'},large={transform:'none',opacity:1,clipPath:'inset(0 round '+host.getComputedStyle(panel).borderRadius+')'};
 
     const saved=panel.style.transformOrigin;panel.style.transformOrigin='0 0';
-    // The native orb stays visible above the moving panel throughout both flights.
-    // It is a persistent anchor, not artwork replaced by the Surface.
+    // Keep the orb mounted as the anchor for both flights.
     orb.dataset.surfaceActive='true';
     let cleaned=false;const cleanup=()=>{if(cleaned)return;cleaned=true;delete orb.dataset.surfaceActive;panel.style.transformOrigin=saved;cleanups.delete(cleanup);};cleanups.add(cleanup);
     try{
-     const run=async(el,frames)=>{const a=el.animate(frames,{duration,easing:css.getPropertyValue('--mp-ease-surface').trim()||'ease',fill:'both'});animations.add(a);try{await a.finished;}catch(_){}finally{a.cancel();animations.delete(a);}};
-     await run(panel,opening?[small,large]:[large,small]);
+     const motion={duration,easing:css.getPropertyValue('--mp-ease-surface').trim()||'ease'};
+     const dock=!opening&&typeof orb.animate==='function'?returnDock:undefined;
+     const startTime=dock?doc.timeline?.currentTime:null;
+     const panelFlight=animateNative(panel,opening?[small,large]:[large,small],motion,startTime);
+     if (dock) {
+      // Keep the panel's original shrink relative to the orb while both slide together.
+      const retreat=[{translate:'0px 0px'},{translate:`${dock.left-o.left}px ${dock.top-o.top}px`}];
+      const retreatMotion={duration,easing:'ease-in-out'};
+      await Promise.all([panelFlight,animateNative(panel,retreat,retreatMotion,startTime),animateNative(orb,retreat,retreatMotion,startTime)]);
+     } else await panelFlight;
     }catch(error){hero?.cleanup();throw error;}finally{cleanup();}
    }
    try{if(hero&&epoch===generation)await hero.land();}finally{hero?.cleanup();}
