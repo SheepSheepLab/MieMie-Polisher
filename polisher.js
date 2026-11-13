@@ -11,7 +11,8 @@ export function createPolisherExtension(api, appearance) {
       tool.panel.querySelector('.mm-tool-titles > strong').textContent = `${POLISHER_MANIFEST.name} ${POLISHER_MANIFEST.version}`;
       api.attachPanel(tool.panel, {icon: POLISHER_ASSETS.icon});
       mountLauncherSettings({host, panel: tool.panel, header: tool.panel.querySelector('.mt-heading'),
-        icon: POLISHER_ASSETS.icon, appearance: appearance ?? createLauncherAppearance(host), resources, api, id: 'polisher-launcher'});
+        icon: POLISHER_ASSETS.icon, appearance: appearance ?? createLauncherAppearance(host), resources, api, id: 'polisher-launcher',
+        dismissEditor:tool.dismissEditor});
     },
     open(surfaceLease) { return tool?.open?.(surfaceLease) ?? api.showPanel(surfaceLease); },
     // Private, in-memory handoff between this script's two launcher modes.

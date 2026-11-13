@@ -15,14 +15,24 @@ test('polishing and translation algorithms and default prompts match the toolbox
   assert.equal(pure, await read('tests/fixtures/toolbox-polisher-core.txt'));
 });
 
-test('original UI markup only differs in product labels and Surface header containment', async () => {
+test('original non-library controls and settings pages retain their markup', async () => {
   const start = source.indexOf('root.innerHTML=`');
   const markup = source.slice(start, source.indexOf('`;', start)).replace(/\$\{POLISHER_PRODUCT\.(\w+)\}/g,(_,key)=>POLISHER_PRODUCT[key]);
-  const expected = (await read('tests/fixtures/toolbox-polisher-markup.html'))
+  const historical = (await read('tests/fixtures/toolbox-polisher-markup.html'))
     .replace('data-tool-icon="translation"', 'data-tool-icon="polisher"')
-    .replace('data-open>🐑 正文翻译', 'data-open>🐑 咩咩润色')
-    .replace('.mt-head{padding:16px', '.mt-head{position:relative;inset:auto;width:auto;z-index:auto;padding:16px');
-  assert.equal(markup, expected);
+    .replace('data-open>🐑 正文翻译', 'data-open>🐑 咩咩润色');
+  const unchanged = [
+    /<header class="mt-head[\s\S]*?<\/header>/,
+    /<button type="button" data-terms [\s\S]*?<\/nav>/,
+    /<div class="mt-tab-page" data-terms-pane[\s\S]*?(?=  <footer class="mt-footer")/,
+    /<footer class="mt-footer"[\s\S]*?<\/footer>/,
+    /<button type="button" data-open>[^<]+<\/button>/,
+  ];
+  for (const pattern of unchanged) {
+    const original = historical.match(pattern);
+    assert.ok(original, String(pattern));
+    assert.equal(markup.match(pattern)?.[0], original[0]);
+  }
 });
 
 test('standalone artifact, manifest, version and permanent identities agree', async () => {

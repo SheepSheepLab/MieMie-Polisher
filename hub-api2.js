@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Extension-owned API2 presentation bridge. Business state stays in one factory.
-import {dismissLauncherSettings} from './launcher-settings.js';
+import {dismissPanelLayer} from './launcher-settings.js';
 export function createAPI2NativeBridge(api, {createLauncher, onError}) {
   let panel = null, native = null, nativeLease = null, instance = null;
   const live = () => !api.signal.aborted;
@@ -48,7 +48,7 @@ export function createAPI2NativeBridge(api, {createLauncher, onError}) {
           if (!live() || signal.aborted) throw Error('Native mount is no longer current.');
           const handle = createLauncher(() => live() && !signal.aborted ? open() : false, () => {
             if (!nativeCurrent(nativeLease) || !panel) return false;
-            return dismissLauncherSettings(panel) || (!panel.querySelector('dialog[open]') && facade.closePanel(nativeLease));
+            return dismissPanelLayer(panel) || (!panel.querySelector('dialog[open]') && facade.closePanel(nativeLease));
           });
           native = handle;
           return {getOrigin: handle.getOrigin, dispose() {

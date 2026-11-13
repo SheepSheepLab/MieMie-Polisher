@@ -7,6 +7,11 @@ const artifact = JSON.parse(await readFile(new URL('../build/MieMie-Polisher-Ext
 const manifest = JSON.parse(await readFile(new URL('../manifest.json', import.meta.url)));
 const assertTitle = f => assert.equal(f.h.document.querySelector('#meeme-translation .mm-tool-titles > strong').textContent, `${manifest.name} ${manifest.version}`);
 const tick = () => new Promise(resolve => setImmediate(resolve));
+const modeTrigger = f => f.el('edit-mode').querySelector('[role=combobox]');
+function chooseMode(f, mode) {
+  modeTrigger(f).click();
+  f.el('edit-mode').querySelector(`[data-mode-option=${mode}]`).click();
+}
 
 function environment() {
   const errors = [], vc = new VirtualConsole(); vc.on('jsdomError', error => errors.push(String(error))); vc.on('warn', error => errors.push(String(error)));
@@ -16,7 +21,9 @@ function environment() {
   const context = {eventTypes: Object.fromEntries(fields.map(x => [x, x])), chat: [{is_user: false, is_system: false, mes: '<story_scene>测试原文</story_scene>', swipe_id: 0}], characterId: 0, characters: [{avatar:'fixture.png',name:'Development Fixture'}], chatId:'fixture-chat', groupId:null, saveChat: async () => {}, mainApi:'openai', stopGeneration() {}};
   const data = {config:{base:'https://api.fixture.invalid/v1',model:'fixture-model',maxTokens:8192,timeoutSeconds:300,protectedTags:''},cards:{'fixture.png':{mode:'polish',target:'简体中文',polishRules:'Fixture prompt',terms:'',sendOriginal:false,prePrompt:{text:'Fixture prefix',role:'system'},postPrompt:{text:'',role:'user'}}},library:[{id:'fixture-prompt',name:'Development Fixture',mode:'polish',data:{target:'简体中文',rules:'Fixture prompt'}}],backups:[]};
   let persisted = structuredClone(data);
-  const originalFetch = async (_url, init = {}) => {outgoing.push(init); return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({translations:['测试润色结果']})}}]}), {status:200,headers:{'Content-Type':'application/json'}});};
+  const success = () => new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({translations:['测试润色结果']})}}]}), {status:200,headers:{'Content-Type':'application/json'}});
+  let reply = success;
+  const originalFetch = async (_url, init = {}) => {outgoing.push(init);return reply();};
   h.fetch = originalFetch; h.SillyTavern = {getContext: () => context};
   const frame = h.document.createElement('iframe'); h.document.body.appendChild(frame); const w = frame.contentWindow;
   Object.assign(w, {Response, Request, Headers, Blob, getVariables: scope => {assert.equal(scope.extension_id,'meeme_translation_v1'); return structuredClone(persisted);}, replaceVariables: (value,scope) => {assert.equal(scope.extension_id,'meeme_translation_v1'); persisted = structuredClone(value);},
@@ -29,7 +36,7 @@ function environment() {
   const el = name => h.document.querySelector('[data-' + name + ']');
   const eventCount = () => [...subscriptions.values()].reduce((sum,x)=>sum+x.size,0);
   const emit=async(name,...args)=>{for(const callback of [...(subscriptions.get(name)||[])])await callback(...args);};
-  return {dom,h,w,source,context,errors,outgoing,el,eventCount,originalFetch,emit,data:()=>persisted};
+  return {dom,h,w,source,context,errors,outgoing,el,eventCount,originalFetch,emit,success,setReply:fn=>{reply=fn;},data:()=>persisted};
 }
 function cooperativeHub(f) {
   let source, active, resolveDisposed;
@@ -49,7 +56,8 @@ test('complete built script works without Hub and retains original settings, hoo
   const f=environment(); await f.source.ready;
   try {
     assert.equal(f.source.mode,'standalone');assertTitle(f);assert.equal(f.eventCount(),10);assert.notEqual(f.h.fetch,f.originalFetch);
-    assert.equal(f.el('pre-text').value,'Fixture prefix');assert.equal(f.el('mode').textContent,'当前：润色模式');
+    assert.equal(f.el('pre-text').value,'Fixture prefix');assert.equal(f.el('mode'),null);
+    assert.match(f.el('translate').textContent,/润色/);
     f.h.document.querySelector('[data-miemie-polisher-standalone]').click();await tick();assert.equal(f.h.document.querySelector('section').hidden,false);
     f.el('key').value='fixture-session-only-key';f.el('save-config').click();assert.equal(f.h.localStorage.getItem('meeme_translation_key_v1'),null);
     f.el('translate').click();for(let i=0;i<8;i++)await tick();
@@ -57,6 +65,169 @@ test('complete built script works without Hub and retains original settings, hoo
     assert.match(f.context.chat[0].mes,/测试润色结果/);assert.equal(f.data().backups.length,1);
     assert.deepEqual(f.errors,[]);
   } finally {await f.source.dispose();assert.equal(f.eventCount(),0);assert.equal(f.h.fetch,f.originalFetch);f.dom.window.close();}
+});
+
+test('reply progress is visible in chat with the panel closed and completes only after saving', async () => {
+  const f=environment();await f.source.ready;
+  const progress=f.h.document.querySelector('[data-mm-request-progress]');
+  try {
+    assert.equal(progress.hidden,true);
+    assert.equal(progress.nextElementSibling.id,'send_form');
+    const response=Promise.withResolvers(), save=Promise.withResolvers();
+    f.setReply(()=>response.promise);
+    f.context.saveChat=()=>save.promise;
+    f.el('auto').click();
+    await f.emit('GENERATION_STARTED','normal');
+    f.context.chat.push({is_user:false,mes:'<story_scene>新回复</story_scene>',swipe_id:0});
+    const run=f.emit('GENERATION_ENDED');
+    assert.equal(f.h.document.querySelector('#meeme-translation section').hidden,true);
+    assert.equal(progress.hidden,false);
+    assert.equal(progress.dataset.mmProgressState,'waiting');
+    response.resolve(f.success());
+    await tick();
+    assert.equal(progress.dataset.mmProgressState,'applying');
+    save.resolve();await run;
+    assert.equal(progress.dataset.mmProgressState,'done');
+    assert.match(progress.textContent,/润色完成 · 已保存/);
+    assert.equal(f.h.document.querySelector('.mt-footer .mm-request-progress').dataset.mmProgressState,'done');
+    f.el('debug').click();
+    assert.match(f.el('log').textContent,/测试润色结果/);
+    assert.match(f.el('log').textContent,/已写回/);
+  } finally {await f.source.dispose();assert.equal(progress.isConnected,false);f.dom.window.close();}
+});
+
+test('unified library restores the old selection, pins examples, and switches the request by selected template', async () => {
+  const f=environment();await f.source.ready;
+  try {
+    const list=f.el('template-list'),examples=f.el('template-examples');
+    assert.equal(list.children.length,1);
+    assert.match(list.querySelector('[data-selected]').textContent,/Development Fixture/);
+    assert.equal(f.data().cards['fixture.png'].selectedPromptId,'fixture-prompt');
+    assert.deepEqual([...examples.children].map(row=>row.querySelector('strong').textContent),['翻译示例','润色示例']);
+    assert.equal(examples.querySelector('[aria-keyshortcuts]'),null);
+    examples.querySelector('[aria-label="选用：翻译示例"]').click();
+    assert.match(f.el('translate').textContent,/翻译/);
+    await f.el('translate').onclick();
+    assert.match(JSON.parse(f.outgoing[0].body).messages[1].content,/你是文本翻译器/);
+    examples.querySelector('[aria-label="查看：润色示例"]').click();
+    assert.equal(f.el('template-editor').open,true);
+    assert.equal(modeTrigger(f).disabled,true);
+    assert.equal(f.el('edit-rules').readOnly,true);
+    f.el('template-close').click();
+    assert.equal(f.el('template-editor').open,false);
+  } finally {await f.source.dispose();f.dom.window.close();}
+});
+
+test('editing a selected prompt preserves identity, updates its mode, and saves keyboard reordering', async () => {
+  const f=environment();await f.source.ready;
+  try {
+    const list=f.el('template-list'), dialog=f.el('template-editor');
+    const edit=name=>list.querySelector(`[aria-label="编辑：${name}"]`).click();
+    const submit=()=>f.el('template-form').dispatchEvent(new f.h.Event('submit',{cancelable:true}));
+    f.el('template-new').click();assert.equal(dialog.open,true);
+    assert.equal(dialog.parentElement,f.el('template-layer'));
+    assert.equal(f.el('template-layer').hidden,false);
+    assert.equal(f.el('tab-content').closest('[inert]').className,'mt-body');
+    assert.equal(f.h.document.querySelector('#send_form').closest('[inert]'),null);
+    f.el('edit-name').value='对白润色';chooseMode(f,'polish');f.el('edit-rules').value='保留对白。';submit();
+    const id=f.data().library.find(item=>item.name==='对白润色').id;
+    list.querySelector('[aria-label="选用：对白润色"]').click();
+    edit('对白润色');chooseMode(f,'translate');f.el('edit-target').value='English';submit();
+    assert.equal(dialog.open,false);
+    assert.equal(f.el('template-layer').hidden,true);
+    assert.equal(f.el('tab-content').closest('[inert]'),null);
+    assert.equal(f.data().cards['fixture.png'].selectedPromptId,id);
+    assert.equal(f.data().library.find(item=>item.id===id).mode,'translate');
+    assert.match(list.querySelector('[data-selected]').textContent,/翻译 · English/);
+    edit('对白润色');chooseMode(f,'polish');submit();
+    assert.match(list.querySelector('[data-selected]').textContent,/润色 · English/);
+    edit('对白润色');f.el('edit-name').value='取消草稿';f.el('template-close').click();
+    assert.equal(f.data().library.find(item=>item.id===id).name,'对白润色');
+    const control=list.querySelector('[aria-label="选用：对白润色"]');
+    control.dispatchEvent(new f.h.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));
+    assert.equal(list.firstElementChild.dataset.promptId,id);
+    control.dispatchEvent(new f.h.KeyboardEvent('keydown',{key:'ArrowDown',altKey:true,bubbles:true,cancelable:true}));
+    assert.deepEqual([...list.children].map(row=>row.dataset.promptId),['fixture-prompt',id]);
+    assert.deepEqual(f.data().library.filter(item=>!item.id.startsWith('meeme-builtin-')).map(item=>item.id),['fixture-prompt',id]);
+    assert.equal(f.el('send-original').textContent,'发送原文：关闭');
+    f.el('send-original').click();assert.equal(f.el('send-original').textContent,'发送原文：开启');
+  } finally {await f.source.dispose();f.dom.window.close();}
+});
+
+test('the shared library can be managed from the home screen and from a group without changing active role preferences', async () => {
+  const f=environment();await f.source.ready;
+  f.h.document.querySelector('[data-miemie-polisher-standalone]').click();await tick();
+  const key='fixture.png', list=f.el('template-list');
+  const submit=()=>f.el('template-form').dispatchEvent(new f.h.Event('submit',{cancelable:true}));
+  try {
+    const roleBefore=structuredClone(f.data().cards[key]);
+    Object.assign(f.context,{characterId:null,chatId:null,chat:[]});await f.emit('CHAT_CHANGED');
+    assert.equal(list.querySelector('[data-selected]'),null);
+    f.el('template-new').click();f.el('edit-name').value='首页新建';
+    const trigger=modeTrigger(f), dialog=f.el('template-editor');
+    const keypress=key=>trigger.dispatchEvent(new f.h.KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));
+    assert.equal(f.el('edit-mode').querySelector('select'),null);
+    keypress('ArrowDown');assert.equal(trigger.getAttribute('aria-expanded'),'true');
+    keypress('ArrowDown');assert.equal(trigger.getAttribute('aria-activedescendant'),'mt-mode-polish');
+    keypress('Escape');assert.equal(trigger.getAttribute('aria-expanded'),'false');assert.equal(dialog.open,true);
+    keypress('ArrowDown');keypress('End');keypress('Enter');
+    assert.match(trigger.textContent,/润色模式/);submit();
+    const id=f.data().library.find(item=>item.name==='首页新建').id;
+    const control=list.querySelector('[aria-label="选用：首页新建"]');
+    control.click();assert.equal(list.querySelector('[data-selected]'),null);
+    control.dispatchEvent(new f.h.KeyboardEvent('keydown',{key:'ArrowDown',altKey:true,bubbles:true,cancelable:true}));
+    assert.equal(list.lastElementChild.dataset.promptId,id);
+
+    Object.assign(f.context,{groupId:'fixture-group',chatId:'group-chat'});await f.emit('CHAT_CHANGED');
+    list.querySelector('[aria-label="编辑：首页新建"]').click();
+    f.el('edit-name').value='群聊编辑';chooseMode(f,'translate');submit();
+    assert.equal(f.data().library.find(item=>item.id===id).mode,'translate');
+    list.querySelector('[aria-label="编辑：群聊编辑"]').click();
+    f.el('template-delete').click();f.el('template-delete').click();
+    assert.ok(!f.data().library.some(item=>item.id===id));
+    assert.deepEqual(f.data().cards,{[key]:roleBefore});
+  } finally {await f.source.dispose();f.dom.window.close();}
+});
+
+test('old prompt files still import into the unified list and removing an active entry clears only its selection', async () => {
+  const f=environment();await f.source.ready;
+  try {
+    const file=f.el('template-file'),list=f.el('template-list');
+    const value={format:'meeme-prompt',version:1,name:'旧版导入条目',target:'繁體中文',mode:'translate',rules:'保留语气。'};
+    Object.defineProperty(file,'files',{value:[{size:200,text:async()=>JSON.stringify(value)}]});
+    await file.onchange();
+    list.querySelector('[aria-label="选用：旧版导入条目"]').click();
+    const active=f.data().cards['fixture.png'].selectedPromptId;
+    assert.match(list.querySelector('[data-selected]').textContent,/翻译 · 繁體中文/);
+    list.querySelector('[aria-label="编辑：旧版导入条目"]').click();
+    f.el('template-delete').click();assert.ok(f.data().library.some(item=>item.id===active));
+    f.el('template-delete').click();assert.ok(!f.data().library.some(item=>item.id===active));
+    assert.equal(f.data().cards['fixture.png'].selectedPromptId,null);
+    assert.equal(f.data().cards['fixture.png'].selections.polish,'fixture-prompt');
+    assert.equal(f.el('template-examples').children.length,2);
+  } finally {await f.source.dispose();f.dom.window.close();}
+});
+
+test('cancellation, late results and provider errors stay distinct in the built progress UI', async () => {
+  const f=environment();await f.source.ready;
+  const progress=f.h.document.querySelector('[data-mm-request-progress]');
+  try {
+    const reply=Promise.withResolvers();f.setReply(()=>reply.promise);
+    const run=f.el('translate').onclick();
+    assert.equal(progress.dataset.mmProgressState,'waiting');
+    await f.el('translate').onclick();await run;
+    assert.equal(progress.dataset.mmProgressState,'cancelled');
+    reply.resolve(f.success());await tick();
+    assert.equal(progress.dataset.mmProgressState,'cancelled');
+    assert.match(f.context.chat[0].mes,/测试原文/);
+
+    f.setReply(()=>new Response('provider error',{status:503}));
+    await f.el('translate').onclick();
+    assert.equal(progress.dataset.mmProgressState,'failed');
+    assert.match(progress.textContent,/润色失败/);
+    f.context.chatId='other-chat';await f.emit('CHAT_CHANGED');
+    assert.equal(progress.hidden,true);
+  } finally {await f.source.dispose();f.dom.window.close();}
 });
 
 test('built script preserves memory-only saved key, unsaved API form, auto switch and historical data across both modes', async () => {

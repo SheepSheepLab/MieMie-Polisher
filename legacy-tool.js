@@ -1,4 +1,6 @@
 import {POLISHER_PRODUCT} from './product-identity.js';
+import {mountRequestProgress} from './request-progress.js';
+import {mountPromptLibrary, promptLibraryMarkup, promptEditorMarkup} from './prompt-library.js';
 export function mountPolisherTool(api, resources, assets) {
 'use strict';
 const DEFAULT_RULES = '不扩写、不添加称谓或情节，保留段落；内部标签及其属性原样保留，只翻译文本。';
@@ -199,17 +201,13 @@ function transferProtected(target,reference,current,tags) {
   const defaults=()=>({mode:'translate',polishRules:'',target:'简体中文',rules:DEFAULT_RULES,terms:'',prePrompt:{text:'',role:'system'},postPrompt:{text:'',role:'system'},sendOriginal:false});
   let saved={};try{saved=getVariables(STORE)||{};}catch(_){}
   let config={base:'',model:'',maxTokens:8192,timeoutSeconds:300,thinkingMode:'auto',protectedTags:'',...saved.config},cards=saved.cards||{},backup=null;
-  let library=Array.isArray(saved.library)?saved.library:[],editingTemplate=null,creatingTemplate=false,menuOpen=false,templateSerial=0;
+  let library=Array.isArray(saved.library)?saved.library:[],templateSerial=0;
   const DEFAULT_TEMPLATE_ID='meeme-builtin-translation';
   const POLISH_TEMPLATE_ID='meeme-builtin-polish';
   const isDefault=t=>t.id===DEFAULT_TEMPLATE_ID||t.id===POLISH_TEMPLATE_ID;
-  for(const t of library)if(t.name==='翻译 · 已有设置'&&t.mode==='translate'&&t.data.target==='简体中文'&&t.data.rules===DEFAULT_RULES){
-    for(const c of Object.values(cards))if(c.selections?.translate===t.id)c.selections.translate=DEFAULT_TEMPLATE_ID;
-  }
-  library=library.filter(t=>!isDefault(t)&&!(t.name==='翻译 · 已有设置'&&t.mode==='translate'&&t.data.target==='简体中文'&&t.data.rules===DEFAULT_RULES));
-  library.push({id:DEFAULT_TEMPLATE_ID,mode:'translate',name:'默认设置',data:{target:'简体中文',rules:DEFAULT_RULES}});
-  library.push({id:POLISH_TEMPLATE_ID,mode:'polish',name:'武侠润色-示例',data:{target:'简体中文',rules:WUXIA_EXAMPLE}});
-  const templateLabel=t=>(t.mode==='polish'?'润色':'翻译')+' · '+(t.name||'未命名提示词').replace(/^(翻译|润色)\s*[·・]\s*/,'');
+  library=library.filter(t=>!isDefault(t));
+  library.push({id:DEFAULT_TEMPLATE_ID,mode:'translate',name:'翻译示例',data:{target:'简体中文',rules:DEFAULT_RULES}});
+  library.push({id:POLISH_TEMPLATE_ID,mode:'polish',name:'润色示例',data:{target:'简体中文',rules:WUXIA_EXAMPLE}});
   let backups=Array.isArray(saved.backups)?saved.backups:(saved.backup?[saved.backup]:[]);
   if(!Number.isInteger(config.timeoutSeconds)||config.timeoutSeconds<30||config.timeoutSeconds>1800)config.timeoutSeconds=300;
   let enabled=false,secret='',run=null,blocked=false,waiters=[],generation=null,disposed=false,writing=false,debug=null,testRun=null,pendingStart=null;
@@ -233,7 +231,6 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation label{display:block;margin:10px 0;color:#d5c7e4}#meeme-translation input,#meeme-translation textarea,#meeme-translation select{font:inherit;width:100%;color:#eee;background:#0b0c19;border:1px solid #574168;border-radius:7px;padding:8px;margin-top:5px}
 #meeme-translation input[type=checkbox]{width:auto;margin:0 7px 0 0;accent-color:var(--mm-palette-44,#a876da)}#meeme-translation .mt-check{display:flex;align-items:center}
 #meeme-translation textarea{min-height:130px;resize:vertical;line-height:1.6}#meeme-translation small{display:block;color:#a99ab9;font-size:12px}
-#meeme-translation .mt-prompt-row{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:10px;align-items:start}#meeme-translation .mt-prompt-row label{margin:0}#meeme-translation .mt-prompt-row select{margin-top:5px}
 #meeme-translation pre{max-height:300px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#0a0b16;border:1px solid #382945;border-radius:7px;padding:10px;font-size:12px;scrollbar-width:thin}
 #meeme-translation p{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}#meeme-translation .mt-actions{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px}
 #meeme-translation .mt-footer{padding:10px 16px;background:#131322;border-top:1px solid #413055;flex-shrink:0}#meeme-translation [data-status]{font-size:12px;color:#c7b9da;max-height:70px;overflow:auto}
@@ -250,7 +247,6 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation section{position:absolute;right:0;bottom:52px;width:min(500px,100%);height:min(760px,calc(100% - 52px));max-height:calc(100% - 52px);margin:0;pointer-events:auto}
 #meeme-translation [data-open]{position:absolute;right:0;bottom:0;margin:0;pointer-events:auto}
 #meeme-translation .mt-heading strong{min-width:0;overflow-wrap:anywhere}
-#meeme-translation .mt-prompt-row{grid-template-columns:minmax(0,1fr) minmax(76px,24%)}
 #meeme-translation input[data-remember]{appearance:none;-webkit-appearance:none;flex:none;width:22px;height:22px;padding:0;border:1px solid var(--mm-palette-38,#8a6ba7);border-radius:6px;background:#0b0c19;display:inline-grid;place-content:center;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
 #meeme-translation input[data-remember]:checked{background:var(--mm-palette-35,#8855db);border-color:var(--mm-palette-45,#ac83ee);box-shadow:0 0 8px var(--mm-palette-36,#8855db55)}
 #meeme-translation input[data-remember]::after{content:"";width:10px;height:6px;border-left:2px solid white;border-bottom:2px solid white;transform:rotate(-45deg) scale(.5);opacity:0;transition:transform .18s,opacity .18s}
@@ -261,26 +257,8 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation .mt-prompt-col{min-width:0;border:1px solid #49345e;border-radius:8px;padding:10px;background:#130e2080}
 #meeme-translation .mt-prompt-col strong{display:block;color:#dcc6fb;font-size:14px}
 #meeme-translation .mt-prompt-col label{margin:6px 0}#meeme-translation .mt-prompt-col textarea{display:block;min-height:87px}
-#meeme-translation .mt-library{border-top:1px dashed #60417f;margin-top:16px;padding-top:8px}
-#meeme-translation .mt-template-new{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
-#meeme-translation .mt-template-new input{margin:0}
-#meeme-translation .mt-template-row{display:grid;grid-template-columns:minmax(0,1fr) 32px 32px 32px;gap:8px;margin-top:6px}
-#meeme-translation .mt-template-row button:first-child{text-align:left;overflow-wrap:anywhere}
-#meeme-translation .mt-template-row button{padding:7px}
-#meeme-translation .mt-template-editor{margin-top:12px;padding:10px;border:1px solid var(--mm-palette-39,#9566c8);border-radius:8px}
-@media(max-width:350px){#meeme-translation .mt-prompt-columns{gap:6px}#meeme-translation .mt-prompt-col{padding:6px}#meeme-translation .mt-template-new{grid-template-columns:1fr}}
-#meeme-translation [data-template-list]{max-height:240px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
-#meeme-translation .mt-template-editor label{margin:6px 0}#meeme-translation [data-edit-rules]{min-height:100px;height:100px}
 #meeme-translation .mt-mode-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 #meeme-translation .mt-mode-pair .mt-mode{display:flex;min-width:0}
-#meeme-translation .mt-template-row{align-items:stretch;gap:6px;grid-template-columns:minmax(0,1fr) 34px 34px 34px}
-#meeme-translation .mt-template-row button{min-width:0;margin:0;min-height:36px}
-#meeme-translation .mt-template-row button:not(:first-child){display:flex;align-items:center;justify-content:center;padding:0;line-height:1;font-size:15px;text-align:center}
-#meeme-translation [data-template-current]>button,#meeme-translation [data-template-new],#meeme-translation [data-template-import]{width:100%}
-#meeme-translation [data-template-menu]{border:1px solid #60417f;border-radius:8px;padding:6px;margin:6px 0;background:#130e20}
-#meeme-translation [data-template-new]{margin:0 0 6px;text-align:left}
-#meeme-translation [data-template-import]{margin-top:8px}
-#meeme-translation .mt-default-row{grid-template-columns:minmax(0,1fr) 34px}
 /* Isolate the checkmark from host theme pseudo-elements. */
 #meeme-translation input[data-remember]{position:relative;appearance:none!important;-webkit-appearance:none!important;background-image:none!important;color:transparent!important}
 #meeme-translation input[data-remember]::before{content:none!important;display:none!important}
@@ -289,7 +267,6 @@ function transferProtected(target,reference,current,tags) {
 #meeme-translation .mt-key-row,#meeme-translation .mt-model-row{display:flex;align-items:center;gap:12px}
 #meeme-translation .mt-key-row{justify-content:space-between}#meeme-translation .mt-key-row button,#meeme-translation .mt-model-row button{flex-shrink:0}
 #meeme-translation .mt-model-row small{min-width:0}#meeme-translation select:disabled{opacity:.45;cursor:not-allowed}
-#meeme-translation .mt-picker-line .mt-template-row{margin-top:0}.mt-picker-line{display:flex;gap:8px;align-items:stretch}.mt-picker-line [data-template-current]{flex:1;min-width:0}#meeme-translation .mt-picker-line [data-template-import]{flex:0 0 36px;width:36px;margin:0;padding:0;display:grid;place-items:center;font-size:15px}#meeme-translation [data-template-confirm]{width:100%;margin:10px 0}#meeme-translation [data-template-confirm][hidden]{display:none!important}
 #meeme-translation #mt-rules .mt-pad,#meeme-translation #mt-terms .mt-pad{padding-top:16px;padding-bottom:16px}
 #meeme-translation .mt-protection-settings{display:grid;gap:24px}
 #meeme-translation .mt-setting-block{display:grid;gap:10px}
@@ -299,7 +276,7 @@ function transferProtected(target,reference,current,tags) {
 
 /* Icon tabs fill the existing fixed-height window; only page content scrolls. */
 #meeme-translation .mt-body{display:flex;flex-direction:column;overflow:hidden;padding:0 12px 12px}
-#meeme-translation .mt-body>.mt-mode-pair,#meeme-translation .mt-body>.mt-mode{flex-shrink:0}
+#meeme-translation .mt-body>.mt-mode-pair{flex-shrink:0}
 #meeme-translation .mt-workspace{display:flex;flex:1;min-height:0;margin-top:8px}
 #meeme-translation .mt-sidebar{display:flex;flex-direction:column;gap:8px;width:50px;margin-right:-2px;flex:none;padding-top:15px;position:relative;z-index:1;overflow-y:auto;scrollbar-width:none}
 #meeme-translation .mt-sidebar button{display:grid;place-items:center;flex-shrink:0;width:49px;height:46px;min-height:46px;margin:0;padding:11px;border:1px solid transparent;border-radius:11px 0 0 11px;background:transparent;color:#aa91be}
@@ -315,12 +292,11 @@ function transferProtected(target,reference,current,tags) {
 <section hidden aria-label="${POLISHER_PRODUCT.name}">
   <header class="mt-head mm-tool-heading"><div class="mt-heading"><div class="mm-tool-brand"><img data-tool-icon="polisher" alt="${POLISHER_PRODUCT.launcherName}" draggable="false"><div class="mm-tool-titles"><strong>${POLISHER_PRODUCT.name}</strong><small data-card></small></div></div><button type="button" data-close class="mt-compact">收起面板</button></div></header>
   <div class="mt-body" data-scroll>
-    <div class="mt-mode-pair"><div class="mt-mode"><button type="button" data-mode aria-pressed="false">当前：翻译模式</button></div>
-    <div class="mt-mode"><button type="button" data-auto aria-pressed="false">自动处理：关闭</button></div></div>
-      <div class="mt-mode"><button type="button" data-send-original aria-pressed="false">发送时使用原文：关闭</button></div>
-    <div class="mt-workspace"><nav class="mt-sidebar" role="tablist" aria-orientation="vertical" aria-label="翻译与润色设置"><button type="button" data-rules id="mt-tab-rules" role="tab" aria-controls="mt-rules" aria-selected="false" tabindex="-1" aria-label="翻译提示库" title="翻译提示库"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1zM12 6v14"/></svg></button><button type="button" data-terms id="mt-tab-terms" role="tab" aria-controls="mt-terms" aria-selected="false" tabindex="-1" aria-label="保护标签与术语" title="保护标签与术语"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3zM8 12l3 3 5-6"/></svg></button><button type="button" data-prompts id="mt-tab-prompts" role="tab" aria-controls="mt-prompts" aria-selected="false" tabindex="-1" aria-label="前置与后置提示词" title="前置与后置提示词"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 19h16M8 9l-3 3 3 3M16 9l3 3-3 3M11 15l2-6"/></svg></button><button type="button" data-config id="mt-tab-config" role="tab" aria-controls="mt-config" aria-selected="false" tabindex="-1" aria-label="接口配置" title="接口配置"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></button><button type="button" data-debug id="mt-tab-debug" role="tab" aria-controls="mt-debug" aria-selected="false" tabindex="-1" aria-label="本次调试" title="本次调试"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></button></nav><div class="mt-tab-content" data-tab-content><div class="mt-tab-page" data-rules-pane id="mt-rules" role="tabpanel" aria-labelledby="mt-tab-rules" tabindex="0" hidden inert><h3 class="mt-page-heading" data-rules-heading>翻译提示库</h3>
-<div class="mt-picker-line"><button type="button" data-template-import title="导入提示词" aria-label="导入提示词">📥</button><div data-template-current></div></div><div data-template-menu id="mt-template-menu" hidden><button type="button" data-template-new>＋新建提示词</button><div data-template-list></div></div><button type="button" data-template-confirm hidden>确定</button><input type="file" data-template-file accept=".json,application/json" hidden>
-<div data-template-editor class="mt-template-editor" hidden><small data-editor-hint>自动保存 · 再点 ✏️ 收起</small><label>名称<input data-edit-name maxlength="80"></label><label>目标语言<input data-edit-target></label><label>要求<textarea data-edit-rules></textarea></label></div>
+    <div class="mt-mode-pair">
+      <div class="mt-mode"><button type="button" data-send-original aria-pressed="false">发送原文：关闭</button></div>
+      <div class="mt-mode"><button type="button" data-auto aria-pressed="false">自动处理：关闭</button></div>
+    </div>
+    <div class="mt-workspace"><nav class="mt-sidebar" role="tablist" aria-orientation="vertical" aria-label="翻译与润色设置"><button type="button" data-rules id="mt-tab-rules" role="tab" aria-controls="mt-rules" aria-selected="false" tabindex="-1" aria-label="翻译/润色提示库" title="翻译/润色提示库"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-3-2-6-2-9-1v14c3-1 6-1 9 1 3-2 6-2 9-1V5c-3-1-6-1-9 1zM12 6v14"/></svg></button><button type="button" data-terms id="mt-tab-terms" role="tab" aria-controls="mt-terms" aria-selected="false" tabindex="-1" aria-label="保护标签与术语" title="保护标签与术语"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3zM8 12l3 3 5-6"/></svg></button><button type="button" data-prompts id="mt-tab-prompts" role="tab" aria-controls="mt-prompts" aria-selected="false" tabindex="-1" aria-label="前置与后置提示词" title="前置与后置提示词"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 19h16M8 9l-3 3 3 3M16 9l3 3-3 3M11 15l2-6"/></svg></button><button type="button" data-config id="mt-tab-config" role="tab" aria-controls="mt-config" aria-selected="false" tabindex="-1" aria-label="接口配置" title="接口配置"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></button><button type="button" data-debug id="mt-tab-debug" role="tab" aria-controls="mt-debug" aria-selected="false" tabindex="-1" aria-label="本次调试" title="本次调试"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></button></nav><div class="mt-tab-content" data-tab-content><div class="mt-tab-page" data-rules-pane id="mt-rules" role="tabpanel" aria-labelledby="mt-tab-rules" tabindex="0" hidden inert>${promptLibraryMarkup}
     </div><div class="mt-tab-page" data-terms-pane id="mt-terms" role="tabpanel" aria-labelledby="mt-tab-terms" tabindex="0" hidden inert><h3 class="mt-page-heading" data-terms-heading>保护标签与术语</h3>
       <div class="mt-protection-settings">
         <div class="mt-setting-block"><label>保护标签（翻译／润色共用）<textarea data-protected-tags placeholder="初始为空，按需填写"></textarea></label><small>只填开始标签，自动匹配结束标签；整段保留，不发送给处理API。每行一个标签，留空则不保护；修改自动保存。</small></div>
@@ -345,6 +321,7 @@ function transferProtected(target,reference,current,tags) {
     </div></div></div>
   </div>
   <footer class="mt-footer"><div class="mt-actions"><button type="button" data-translate>翻译／重译最后回复</button><button type="button" data-restore>查看原文</button></div><p data-status role="status" aria-live="polite"></p></footer>
+${promptEditorMarkup}
 </section><button type="button" data-open>🐑 ${POLISHER_PRODUCT.launcherName}</button>
 `;
   const theme=doc.createElement('style');theme.textContent=assets.styles;root.appendChild(theme);
@@ -361,15 +338,30 @@ function transferProtected(target,reference,current,tags) {
   }
   fitViewport();resources.listen(host,'resize',fitViewport);resources.listen(host.visualViewport,'resize',fitViewport);resources.listen(host.visualViewport,'scroll',fitViewport);
   const el=n=>root.querySelector('[data-'+n+']'),panel=root.querySelector('section');
+  const progress=mountRequestProgress({doc,resources,panelAnchor:el('status'),label:POLISHER_PRODUCT.name,
+    palette:{bg:'#1b1125',border:'#493056',text:'#f0daed',accent:'#e69acb',offset:'0px'}});
   const say=t=>{if(!disposed)el('status').textContent=t;};
   const apiSay=t=>{if(!disposed){el('api-status').textContent=t;say(t);}};
   const cardKey=()=>{const c=ctx();return c.groupId?null:c.characters?.[c.characterId]?.avatar||null;};
   const scope=()=>JSON.stringify([cardKey(),ctx().chatId,ctx().groupId]);
-  const prefs=()=>{const p={...defaults(),...(cards[cardKey()]||{})};const t=library.find(t=>t.id===p.selections?.[p.mode]&&t.mode===p.mode);if(t){p.target=t.data.target;p[p.mode==='polish'?'polishRules':'rules']=t.data.rules;}return p;};
+  const storedPrefs=()=>({...defaults(),...(cards[cardKey()]||{})});
+  const selectedPrompt=(state=storedPrefs())=>library.find(item=>Object.hasOwn(state,'selectedPromptId')
+    ? item.id===state.selectedPromptId : item.id===state.selections?.[state.mode??'translate']&&item.mode===(state.mode??'translate'));
+  const prefs=()=>{
+    const p=storedPrefs(),item=selectedPrompt(p);
+    if(item){p.mode=item.mode;p.target=item.data.target;p[p.mode==='polish'?'polishRules':'rules']=item.data.rules;}
+    return p;
+  };
   function persist(){if(!disposed)replaceVariables({config,cards,backups,library},STORE);}
   function release(){blocked=false;waiters.splice(0).forEach(resolve=>resolve());if(!disposed)paintActions();}
   function last(){const chat=ctx().chat;for(let i=chat.length-1;i>=0;i--)if(!chat[i].is_user&&!chat[i].is_system)return {id:i,message:chat[i]};return null;}
-  function aiRows(){return ctx().chat.map((message,id)=>({message,id})).filter(x=>!x.message.is_user&&!x.message.is_system);}
+  function recentAssistantRows(){
+    const chat=ctx().chat, rows=[];
+    for(let id=chat.length-1;id>=0&&rows.length<2;id--){
+      const message=chat[id];if(!message.is_user&&!message.is_system)rows.push({message,id});
+    }
+    return rows;
+  }
   function matchesAny(b){const m=ctx().chat[b?.id];if(!(b&&m&&!m.is_user&&!m.is_system&&b.scope===scope()&&b.swipe===(m.swipe_id??0)))return false;
     if(b.expected===m.mes)return true;
     try{const tags=b.protectedTags||protectedTagNames(config.protectedTags);const source=transferProtected(b.source,b.expected,m.mes,tags),processed=b.processed?transferProtected(b.processed,b.expected,m.mes,tags):null;b.source=source;if(processed)b.processed=processed;b.expected=m.mes;return true;}catch(_){return false;}
@@ -378,9 +370,9 @@ function transferProtected(target,reference,current,tags) {
   function lookup(item){return item?backups.find(b=>b.id===item.id&&matchesAny(b))||null:null;}
   function validBackup(){backup=lookup(last());return backup;}
   function remember(b){backups=backups.filter(x=>!(x.scope===b.scope&&x.id===b.id&&x.swipe===b.swipe));backups.push(b);backup=b;}
-  function prune(){const ids=new Set(aiRows().slice(-2).map(x=>x.id));backups=backups.filter(b=>b.scope===scope()&&ids.has(b.id));}
+  function prune(){const ids=new Set(recentAssistantRows().map(x=>x.id)),currentScope=scope();backups=backups.filter(b=>b.scope===currentScope&&ids.has(b.id));}
   function captureLatest(){const item=last();if(!item)return;let b=lookup(item);if(!b){try{scenes(item.message.mes);}catch(_){prune();persist();return;}b={scope:scope(),id:item.id,swipe:item.message.swipe_id??0,source:item.message.mes,expected:item.message.mes};remember(b);}backup=b;prune();persist();}
-  function paintCard(){const c=ctx();el('card').textContent=cardKey()?'当前角色：'+(c.characters[c.characterId].name||cardKey()):'请打开单人角色聊天';ensureSelection();const p=prefs();el('term-text').value=p.terms;el('pre-text').value=p.prePrompt?.text||'';el('pre-role').value=p.prePrompt?.role||'system';el('post-text').value=p.postPrompt?.text||'';el('post-role').value=p.postPrompt?.role||'system';paintMode();}
+  function paintCard(){const c=ctx();el('card').textContent=cardKey()?'当前角色：'+(c.characters[c.characterId].name||cardKey()):'提示词库管理';ensureSelection();const p=prefs();el('term-text').value=p.terms;el('pre-text').value=p.prePrompt?.text||'';el('pre-role').value=p.prePrompt?.role||'system';el('post-text').value=p.postPrompt?.text||'';el('post-role').value=p.postPrompt?.role||'system';paintMode();}
   function paintActions(){
     if(disposed)return;
     const op=run?.operation||(prefs().mode==='polish'?'润色':'翻译');const active=!!run;
@@ -390,77 +382,88 @@ function transferProtected(target,reference,current,tags) {
     el('restore').disabled=active||!!generation||!result;
     el('restore').textContent=b&&b.expected===b.source&&result?'查看处理结果':'查看原文';
   }
-  function paintOriginal(){const on=prefs().sendOriginal===true;el('send-original').textContent='发送时使用原文：'+(on?'开启':'关闭');el('send-original').setAttribute('data-on',String(on));el('send-original').setAttribute('aria-pressed',String(on));}
-  function paintMode(){paintOriginal();const polish=prefs().mode==='polish';
-    el('mode').textContent='当前：'+(polish?'润色模式':'翻译模式');
-    el('mode').setAttribute('aria-pressed',String(polish));el('mode').setAttribute('data-on',String(polish));
-    const libraryLabel=polish?'润色提示库':'翻译提示库';
-    el('rules').setAttribute('aria-label',libraryLabel);el('rules').title=libraryLabel;el('rules-heading').textContent=libraryLabel;
-    paintActions();
-    el('auto').textContent='自动处理：'+(enabled?'开启':'关闭');renderLibrary();
-  }
-  el('mode').onclick=()=>{try{ensureCard();if(run||generation||pendingStart)throw Error('请等待本次处理或生成结束后再切换模式。');
-    const p=prefs();closeTemplateEditor();p.mode=p.mode==='polish'?'translate':'polish';cards[cardKey()]=p;ensureSelection();persist();paintMode();
-    say('已切换为'+(p.mode==='polish'?'润色模式':'翻译模式')+'；两种要求分别保存，下次处理生效。');
-  }catch(e){say(e.message);}};
-  function templateGuard(){ensureCard();if(run||generation||pendingStart)throw Error('请等待处理与生成结束后再操作提示词库。');}
+  function paintOriginal(){const on=prefs().sendOriginal===true;el('send-original').textContent='发送原文：'+(on?'开启':'关闭');el('send-original').setAttribute('data-on',String(on));el('send-original').setAttribute('aria-pressed',String(on));}
+  function paintMode(){paintOriginal();paintActions();el('auto').textContent='自动处理：'+(enabled?'开启':'关闭');promptLibrary.render();}
+  function templateGuard(){if(disposed)throw Error('扩展已停用。');if(run||generation||pendingStart)throw Error('请等待处理与生成结束后再操作提示词库。');}
   function newId(){return Date.now().toString(36)+'-'+(++templateSerial)+'-'+Math.random().toString(36).slice(2,7);}
   function ensureSelection(){
-    if(!cardKey())return;const p={...defaults(),...(cards[cardKey()]||{})};p.selections={...p.selections};
+    const key=cardKey();if(!key)return;
+    const p=storedPrefs();let changed=false;
+    p.selections={...p.selections};
     for(const mode of ['translate','polish'])if(p.selections[mode]===undefined){
       const data={target:p.target,rules:mode==='polish'?p.polishRules:p.rules};
-      let t=library.find(t=>t.mode===mode&&t.data.target===data.target&&t.data.rules===data.rules);
-      if(!t){t={id:newId(),mode,name:(mode==='polish'?'润色':'翻译')+' · 已有设置',data};library.push(t);}
-      p.selections[mode]=t.id;
+      if(mode==='polish'&&p.mode!==mode&&!data.rules){p.selections[mode]=null;changed=true;continue;}
+      let item=library.find(entry=>entry.mode===mode&&entry.data.target===data.target&&entry.data.rules===data.rules);
+      if(!item){item={id:newId(),mode,name:(mode==='polish'?'润色':'翻译')+' · 已有设置',data};library=[...library,item];}
+      p.selections[mode]=item.id;changed=true;
     }
-    cards[cardKey()]=p;persist();
+    if(!Object.hasOwn(p,'selectedPromptId')){p.selectedPromptId=selectedPrompt(p)?.id??null;changed=true;}
+    if(changed){cards[key]=p;persist();}
   }
-  function closeTemplateEditor(){creatingTemplate=false;el('template-confirm').hidden=true;menuOpen=false;el('template-menu').hidden=true;editingTemplate=null;el('template-editor').hidden=true;renderLibrary();}
-  function editTemplate(t,creating=false){creatingTemplate=creating;el('template-confirm').hidden=!creating;el('editor-hint').textContent=isDefault(t)?'默认设置 · 只读，可选中文字复制':creating?'自动保存 · 点击上方确定收起':'自动保存 · 再点 ✏️ 收起';editingTemplate=t.id;el('template-editor').hidden=false;el('edit-name').value=t.name;el('edit-target').value=t.data.target;el('edit-rules').value=t.data.rules;for(const f of ['name','target','rules'])el('edit-'+f).readOnly=isDefault(t);renderLibrary();el('template-editor').scrollIntoView?.({block:'nearest',behavior:'smooth'});}
+  function setSelectedPrompt(state,item){
+    state.selectedPromptId=item.id;state.mode=item.mode;state.target=item.data.target;
+    state[item.mode==='polish'?'polishRules':'rules']=item.data.rules;
+    state.selections={...state.selections,[item.mode]:item.id};
+  }
+  function validatePrompt(item){
+    if(!['translate','polish'].includes(item.mode)||typeof item.name!=='string'||!item.name.trim()||item.name.length>80||
+      typeof item.data?.target!=='string'||typeof item.data?.rules!=='string')throw Error('提示词字段不完整或格式不兼容。');
+  }
   function exportTemplate(t){
     const data={format:'meeme-prompt',version:1,mode:t.mode,name:t.name,target:t.data.target,rules:t.data.rules};
     const url=host.URL.createObjectURL(new host.Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     resources.add(()=>host.URL.revokeObjectURL(url));
     const a=doc.createElement('a');a.href=url;a.download=t.name.replace(/[\\/:*?"<>|]/g,'_').slice(0,80)+'.json';doc.body.appendChild(a);a.click();a.remove();resources.timeout(()=>host.URL.revokeObjectURL(url),1000);
   }
-  function renderLibrary(){
-    const list=el('template-list'),current=el('template-current');list.replaceChildren();current.replaceChildren();el('template-menu').hidden=!menuOpen;
-    const p=prefs(),items=library.filter(t=>t.mode===p.mode).sort((a,b)=>Number(isDefault(a))-Number(isDefault(b)));
-    const selected=items.find(t=>t.id===p.selections?.[p.mode]);
-    function makeRow(t,isCurrent=false){const row=doc.createElement('div');row.className='mt-template-row';
-      const button=(text,title,fn)=>{const b=doc.createElement('button');b.type='button';b.textContent=text;b.title=title;b.setAttribute('aria-label',title);b.onclick=()=>{try{templateGuard();fn();}catch(e){say(e.message);}};row.appendChild(b);return b;};
-      const apply=button(templateLabel(t)+(isCurrent?(menuOpen?' ▴':' ▾'):''),'选用：'+t.name,()=>{if(isCurrent){menuOpen=!menuOpen;renderLibrary();return;}const p=prefs();p.selections={...p.selections,[p.mode]:t.id};cards[cardKey()]=p;closeTemplateEditor();persist();renderLibrary();say('已选用「'+t.name+'」。');});
-      if(isCurrent){apply.setAttribute('aria-expanded',String(menuOpen));apply.setAttribute('aria-controls','mt-template-menu');}
-      const active=p.selections?.[p.mode]===t.id;apply.setAttribute('data-on',String(active));apply.setAttribute('aria-pressed',String(active));
-      if(isDefault(t)){row.className+=' mt-default-row';const view=button('📖','查看默认设置',()=>{if(editingTemplate===t.id)closeTemplateEditor();else editTemplate(t);});view.setAttribute('data-on',String(editingTemplate===t.id));return row;}
-      const edit=button('✏️','修改：'+t.name,()=>{if(editingTemplate===t.id)closeTemplateEditor();else editTemplate(t);});edit.setAttribute('data-on',String(editingTemplate===t.id));edit.setAttribute('aria-pressed',String(editingTemplate===t.id));
-      button('📤','导出：'+t.name,()=>exportTemplate(t));
-      button('🗑️','删除：'+t.name,()=>{
-        for(const key of Object.keys(cards)){const c=cards[key];if(c.selections?.[t.mode]===t.id){c.target=t.data.target;c[t.mode==='polish'?'polishRules':'rules']=t.data.rules;c.selections={...c.selections,[t.mode]:null};}}
-        library=library.filter(x=>x.id!==t.id);if(editingTemplate===t.id)closeTemplateEditor();persist();renderLibrary();say('已删除；如删除了选中条目，请重新选用提示词。');});
-      return row;
-    }
-    if(selected)current.appendChild(makeRow(selected,true));else{const choose=doc.createElement('button');choose.type='button';choose.textContent='选择提示词 ▾';choose.setAttribute('aria-expanded',String(menuOpen));choose.setAttribute('aria-controls','mt-template-menu');choose.onclick=()=>{menuOpen=!menuOpen;renderLibrary();};current.appendChild(choose);}
-    for(const t of items)list.appendChild(makeRow(t));
-  }
-  el('template-new').onclick=()=>{try{templateGuard();const mode=prefs().mode;const t={id:newId(),mode,name:'新建提示词',data:{target:'简体中文',rules:mode==='polish'?'':DEFAULT_RULES}};library.unshift(t);menuOpen=false;persist();renderLibrary();editTemplate(t,true);}catch(e){say(e.message);}};
-  for(const field of ['name','target','rules'])el('edit-'+field).oninput=()=>{try{templateGuard();const t=library.find(t=>t.id===editingTemplate);if(!t||isDefault(t))return;const value=el('edit-'+field).value;
-    if(field==='name')t.name=value.slice(0,80);else t.data[field]=value;
-    persist();renderLibrary();say('修改已自动保存。');
-  }catch(e){say(e.message);}};
-  el('template-import').onclick=()=>{try{templateGuard();el('template-file').click();}catch(e){say(e.message);}};
-  el('template-confirm').onclick=()=>{try{templateGuard();closeTemplateEditor();menuOpen=true;renderLibrary();say('已完成编辑，内容已自动保存；可从列表选用。');}catch(e){say(e.message);}};
-  el('template-file').onchange=async()=>{try{templateGuard();const file=el('template-file').files?.[0];if(!file)return;if(file.size>1024*1024)throw Error('文件超过1MB，未导入。');const v=JSON.parse(await file.text());templateGuard();
-    if(v.format!=='meeme-prompt'||v.version!==1||!['translate','polish'].includes(v.mode)||typeof v.name!=='string'||!v.name.trim()||v.name.length>80||typeof v.target!=='string'||typeof v.rules!=='string')throw Error('提示词文件格式不兼容，未导入。');
-    library.unshift({id:newId(),mode:v.mode,name:v.name,data:{target:v.target,rules:v.rules}});persist();renderLibrary();say('已导入「'+v.name+'」到'+(v.mode==='polish'?'润色':'翻译')+'提示词库。');
-  }catch(e){say('导入失败：'+e.message);}finally{el('template-file').value='';}};
+  const promptLibrary=mountPromptLibrary({panel,resources,entries:()=>library,selectedId:()=>selectedPrompt()?.id,isExample:isDefault,say,
+    actions:{guard:templateGuard,export:exportTemplate,
+      select(id){
+        templateGuard();ensureCard();const item=library.find(t=>t.id===id);if(!item||selectedPrompt()?.id===id)return;
+        const state=storedPrefs();setSelectedPrompt(state,item);cards[cardKey()]=state;
+        persist();paintMode();say('已选用「'+item.name+'」。');
+      },
+      save(id,input){
+        templateGuard();validatePrompt(input);if(!input.data.target)throw Error('请填写目标语言。');
+        const item={...input,id:id??newId()};
+        if(id){
+          const previous=library.find(t=>t.id===id);if(!previous||isDefault(previous))throw Error('此条目无法编辑。');
+          for(const state of Object.values(cards)){
+            const active=selectedPrompt(state)?.id===id;
+            if(previous.mode!==item.mode&&state.selections?.[previous.mode]===id){state.selections[previous.mode]=null;}
+            if(active)setSelectedPrompt(state,item);
+          }
+          library=library.map(t=>t.id===id?{...t,...item,data:{...t.data,...item.data}}:t);
+        }else{library=[item,...library];}
+        persist();paintMode();say(id?'已保存「'+item.name+'」。':'已新建「'+item.name+'」。');
+      },
+      import(value){
+        if(value?.format!=='meeme-prompt'||value.version!==1)throw Error('提示词文件格式不兼容。');
+        const item={id:newId(),mode:value.mode,name:value.name,data:{target:value.target,rules:value.rules}};validatePrompt(item);
+        library=[item,...library];persist();paintMode();say('已导入「'+item.name+'」。');
+      },
+      remove(id){
+        templateGuard();const item=library.find(t=>t.id===id);if(!item||isDefault(item))throw Error('此条目无法删除。');
+        for(const state of Object.values(cards)){
+          if(selectedPrompt(state)?.id===id){state.selectedPromptId=null;state.target=item.data.target;state[item.mode==='polish'?'polishRules':'rules']=item.data.rules;}
+          for(const mode of ['translate','polish'])if(state.selections?.[mode]===id)state.selections[mode]=null;
+        }
+        library=library.filter(t=>t.id!==id);persist();paintMode();say('已删除「'+item.name+'」。');
+      },
+      move(id,position){
+        templateGuard();const custom=library.filter(t=>!isDefault(t)),from=custom.findIndex(t=>t.id===id);
+        if(from<0||position<0||position>=custom.length||from===position)return;
+        const [item]=custom.splice(from,1);custom.splice(position,0,item);
+        library=[...custom,...library.filter(isDefault)];persist();promptLibrary.render();say('已保存条目顺序。');return true;
+      },
+    },
+  });
   function redact(value){let text=typeof value==='string'?value:JSON.stringify(value,null,2);for(const key of redactions)if(key)text=text.split(key).join('[密钥已隐藏]');return text;}
-  function showDebug(){if(disposed)return;el('log').textContent=debug?redact(debug):'还没有处理请求。';el('main-log').textContent=outgoing?redact(outgoing):'还没有处理主请求。';}
+  function showDebug(){if(disposed||activeTab!=='debug')return;el('log').textContent=debug?redact(debug):'还没有处理请求。';el('main-log').textContent=outgoing?redact(outgoing):'还没有处理主请求。';}
   function reportOutgoing(value){if(disposed)return;Object.assign(value,{time:value.time||new Date().toISOString(),chatMessageId:value.chatMessageId??generation?.target?.id,generationType:value.generationType||generation?.type||'normal'});outgoing=value;el('outgoing-status').textContent=value.status;say(value.status);showDebug();}
   function loadKey(){try{const record=JSON.parse(host.localStorage.getItem(KEY_STORE)||'null');if(record&&record.base===apiRoot(config.base)&&typeof record.key==='string'){secret=record.key;redactions.add(secret);el('key').value=secret;el('remember').checked=true;}}catch(_){} }
   function forgetKey(){host.localStorage.removeItem(KEY_STORE);}
 
-  function cancel(reason){if(run){run.controller.abort();run.cancelled=true;}say(reason);}
+  function cancel(reason){if(run){if(!run.cancelled&&!run.saving)progress.show('cancelled',run.operation+'已取消');run.cancelled=true;run.controller.abort();}say(reason);}
   function ensureCard(){if(disposed)throw Error('扩展已停用。');if(!cardKey()||!ctx().chatId)throw Error('请先打开单人角色聊天。');}
   async function call(messages,controller,maxTokens=config.maxTokens){
     const base=apiRoot(config.base);if(!config.model.trim())throw Error('请填写模型名称并保存接口。');
@@ -496,21 +499,28 @@ function transferProtected(target,reference,current,tags) {
     let b,blocks,messages,rawBlocks,protectedBlocks,requestSource,requestExpected,tags;
     try{ensureCard();const item=last();if(!item)throw Error('没有 AI 回复。');
       b=validBackup();if(!b){b={scope:scope(),id:item.id,swipe:item.message.swipe_id??0,source:item.message.mes,expected:item.message.mes};}
-      if(!library.some(t=>t.id===prefs().selections?.[prefs().mode]&&t.mode===prefs().mode))throw Error('请先在提示词库选用一个条目。');if(!prefs().target.trim())throw Error('请在提示词编辑中填写目标语言。');tags=protectedTagNames(config.protectedTags);b.protectedTags=tags;requestSource=b.source;requestExpected=b.expected;rawBlocks=scenes(requestSource);protectedBlocks=rawBlocks.map(x=>protectText(x.text,tags));blocks=rawBlocks.map((x,i)=>({...x,text:protectedBlocks[i].text}));blocked=true;if(manual)saveConfig();messages=requestMessages(blocks,prefs());apiRoot(config.base);if(!config.model.trim())throw Error('请先填写模型名称并保存接口。');
+      if(!selectedPrompt())throw Error('请先在提示词库选用一个条目。');if(!prefs().target.trim())throw Error('请在提示词编辑中填写目标语言。');tags=protectedTagNames(config.protectedTags);b.protectedTags=tags;requestSource=b.source;requestExpected=b.expected;rawBlocks=scenes(requestSource);protectedBlocks=rawBlocks.map(x=>protectText(x.text,tags));blocks=rawBlocks.map((x,i)=>({...x,text:protectedBlocks[i].text}));blocked=true;if(manual)saveConfig();messages=requestMessages(blocks,prefs());apiRoot(config.base);if(!config.model.trim())throw Error('请先填写模型名称并保存接口。');
     }catch(e){release();say(e.message+' 已解除等待，可修改设置后重试或继续聊天。');return Promise.resolve();}
     remember(b);prune();persist();blocked=true;
     const r={operation:prefs().mode==='polish'?'润色':'翻译',backup:b,identity:last().message,scope:scope(),controller:new host.AbortController(),cancelled:false,promise:null};run=r;paintActions();
     el('outgoing-status').textContent='本次操作是'+r.operation+'；下方主请求记录为历史结果，尚未进行新的换回检测。';
     debug={request:translationBody(config,messages),operation:r.operation,status:r.operation+'中'};showDebug();say('正在'+r.operation+'最后一条 AI 回复；下一轮发送会等待。');
+    progress.show('waiting','正在'+r.operation+' · 等待副 API');
     r.promise=(async()=>{
       const started=Date.now(),limit=config.timeoutSeconds;
       const timer=resources.timeout(()=>{r.timedOut=true;r.controller.abort();},limit*1000);
-      const ticker=resources.interval(()=>{if(!disposed&&run===r&&!r.cancelled){const seconds=Math.floor((Date.now()-started)/1000);debug.status=r.operation+'中：已等待 '+seconds+' 秒 / 上限 '+limit+' 秒';showDebug();say(debug.status);}},1000);
+      const ticker=resources.interval(()=>{if(!disposed&&run===r&&!r.cancelled){const seconds=Math.floor((Date.now()-started)/1000);debug.status=r.operation+'中：已等待 '+seconds+' 秒 / 上限 '+limit+' 秒';if(!panel.hidden)showDebug();say(debug.status);}},1000);
       try{const result=await call(messages,r.controller);guard(r);debug.response=result.content;debug.usage=result.usage;showDebug();
-        const values=translated(result.content,blocks).map((v,i)=>unprotectText(v,protectedBlocks[i])),initial=spliceScenes(requestSource,rawBlocks,values),text=transferProtected(initial,requestExpected,b.expected,tags);await write(r,text);if(disposed)return;b.processed=text;persist();
-        debug.status='已写回';release();say(r.operation+'已写回并保存。可以继续聊天，也可以恢复原文或重新处理。');
-      }catch(e){if(!disposed&&run===r&&!r.cancelled){const message=r.timedOut?r.operation+'已达到设定的 '+limit+' 秒等待上限。可提高等待上限后重试。':e.message;if(debug)debug.status=message;say(message+'\n已自动解除等待；保留当前正文，可以直接重试或继续聊天。');}}
-      finally{resources.clear(timer);resources.clear(ticker);if(run===r){run=null;release();}paintActions();showDebug();}
+        const values=translated(result.content,blocks).map((v,i)=>unprotectText(v,protectedBlocks[i])),initial=spliceScenes(requestSource,rawBlocks,values),text=transferProtected(initial,requestExpected,b.expected,tags);
+        r.saving=true;progress.show('applying','正在保存'+r.operation+'结果');
+        await write(r,text);if(disposed)return;b.processed=text;persist();
+        if(r.scope===scope())progress.show('done',r.operation+'完成 · 已保存');
+        debug.status='已写回';say(r.operation+'已写回并保存。可以继续聊天，也可以恢复原文或重新处理。');
+      }catch(e){if(!disposed&&run===r){
+        if(r.scope===scope()&&(!r.cancelled||r.saving))progress.show('failed',r.saving?r.operation+'结果未确认保存':r.operation+(r.timedOut?'超时':'失败'));
+        if(!r.cancelled){const message=r.timedOut?r.operation+'已达到设定的 '+limit+' 秒等待上限。可提高等待上限后重试。':e.message;if(debug)debug.status=message;say(message+'\n已自动解除等待；保留当前正文，可以直接重试或继续聊天。');}
+      }}
+      finally{resources.clear(timer);resources.clear(ticker);if(run===r){run=null;release();}showDebug();}
     })();return r.promise;
   }
   async function restore(){if(generation){say('生成期间不能恢复，请先停止生成。');return;}if(run){cancel('取消处理后恢复…');await run.promise;}
@@ -669,16 +679,21 @@ function transferProtected(target,reference,current,tags) {
     }
     if(disposed)return;
     const item=last();generation={scope:start.scope,type,old:item?.message.mes,oldSwipe:item?.message.swipe_id??0,id:item?.id,stopped:start.cancelled||start.scope!==scope()};
-    const rows=aiRows(),target=['swipe','regenerate'].includes(type)?rows.at(-2):rows.at(-1);
+    const rows=recentAssistantRows(),target=rows[['swipe','regenerate'].includes(type)?1:0];
     generation.target=target?{...target,backup:lookup(target)}:null;
     records=[];
     if(prefs().sendOriginal)reportOutgoing({status:ctx().mainApi!=='openai'?'当前主接口不是聊天补全，无法换回原文。':!ctx().eventTypes.CHAT_COMPLETION_SETTINGS_READY?'当前酒馆缺少请求组装事件，无法换回原文。':'等待当前正文扫描世界书与请求组装。'});
   }
-  function ended(){const g=generation;generation=null;paintActions();if(!g||g.stopped||g.scope!==scope()||['quiet','impersonate'].includes(g.type))return;
-    const item=last();if(!item||(item.id===g.id&&item.message.mes===g.old&&(item.message.swipe_id??0)===g.oldSwipe))return;
-    captureLatest();paintActions();debug=null;showDebug();if(enabled)return translate();
+  function ended(){const g=generation;generation=null;
+    if(g&&!g.stopped&&g.scope===scope()&&!['quiet','impersonate'].includes(g.type)){
+      const item=last();
+      if(item&&(item.id!==g.id||item.message.mes!==g.old||(item.message.swipe_id??0)!==g.oldSwipe)){
+        captureLatest();debug=null;showDebug();if(enabled)return translate();
+      }
+    }
+    paintActions();
   }
-  function chatChanged(){closeTemplateEditor();if(pendingStart)pendingStart.cancelled=true;cancel('聊天已切换，旧处理不会写入新聊天。');release();generation=null;backup=null;backups=[];debug=null;outgoing=null;records=[];persist();paintCard();showDebug();}
+  function chatChanged(){promptLibrary.close(false);if(pendingStart)pendingStart.cancelled=true;cancel('聊天已切换，旧处理不会写入新聊天。');progress.clear();release();generation=null;backup=null;backups=[];debug=null;outgoing=null;records=[];persist();paintCard();showDebug();}
   function messageChanged(){if(writing)return;if(run&&!matches(run.backup)){cancel('消息已改变，处理结果将丢弃。');release();}if(!generation){validBackup();prune();persist();}paintActions();}
   function cleanup(){
     if(disposed)return;
@@ -729,5 +744,5 @@ function transferProtected(target,reference,current,tags) {
     el('auto').setAttribute('data-on',String(enabled));el('auto').setAttribute('aria-pressed',String(enabled));
     if(tabs.includes(state.activeTab))selectTab(state.activeTab);
   }
-  return {root,panel,open(lease){presentationLease=lease;return api.showPanel(lease);},captureSession,restoreSession};
+  return {root,panel,open(lease){presentationLease=lease;return api.showPanel(lease);},captureSession,restoreSession,dismissEditor:promptLibrary.dismiss};
 }

@@ -38,12 +38,12 @@ export function createLauncherAppearance(host) {
 
 const launcherSettingsDismissals = new WeakMap();
 
-export function dismissLauncherSettings(panel) {
+export function dismissPanelLayer(panel) {
   return launcherSettingsDismissals.get(panel)?.() ?? false;
 }
 
 // The settings layer belongs to this panel. It never changes Hub's presentation lease.
-export function mountLauncherSettings({host, panel, header, icon, appearance, resources, api, id}) {
+export function mountLauncherSettings({host, panel, header, icon, appearance, resources, api, id, dismissEditor}) {
   const doc = panel.ownerDocument;
   resources.add(observeWindowLayer(host,panel));
   const trigger = doc.createElement('button');
@@ -145,8 +145,9 @@ export function mountLauncherSettings({host, panel, header, icon, appearance, re
     if (panel.hidden || panel.inert) close(false);
   });
   observer.observe(panel, {attributes: true, attributeFilter: ['hidden','inert']});
-  launcherSettingsDismissals.set(panel, close);
-  api.registerBackHandler?.(request => request.isCurrent() && close());
+  const dismiss = () => close() || dismissEditor?.() === true;
+  launcherSettingsDismissals.set(panel, dismiss);
+  api.registerBackHandler?.(request => request.isCurrent() && dismiss());
   resources.add(() => {
     observer.disconnect();
     launcherSettingsDismissals.delete(panel);

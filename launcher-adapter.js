@@ -1,5 +1,5 @@
 import {createAPI2NativeBridge} from './hub-api2.js';
-import {createLauncherAppearance, dismissLauncherSettings} from './launcher-settings.js';
+import {createLauncherAppearance, dismissPanelLayer} from './launcher-settings.js';
 import {POLISHER_PRODUCT} from './product-identity.js';
 import {createPolisherNativeLauncher} from './native-launcher.js';
 // API2 source lifecycle; the product retains its native window implementation.
@@ -48,7 +48,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
         session.panel = panel; hide();
         const back = panel.querySelector('.mm-return');
         if (back) { back.textContent = '收起'; back.onclick = () => api.closePanel(); cleanups.push(() => {back.onclick = null;}); }
-        const key = event => { if (event.key === 'Escape' && !event.defaultPrevented && !event.isComposing && event.keyCode !== 229 && !panel.hidden) api.closePanel(); };
+        const key = event => { if (event.key === 'Escape' && !event.defaultPrevented && !event.isComposing && event.keyCode !== 229 && !panel.hidden && !panel.querySelector('dialog[open]')) api.closePanel(); };
         doc.addEventListener('keydown', key); cleanups.push(() => doc.removeEventListener('keydown', key));
         return true;
       },
@@ -62,7 +62,7 @@ export function createPolisherDualMode({host, frame, manifest, factory, icon, la
       restore(session.instance);
       mode = 'standalone'; launcher(() => session.instance.open?.(), () => {
         if (!active() || !session.panel) return false;
-        return dismissLauncherSettings(session.panel) || (!session.panel.querySelector('dialog[open]') && api.closePanel());
+        return dismissPanelLayer(session.panel) || (!session.panel.querySelector('dialog[open]') && api.closePanel());
       });
     } catch (error) { await stopStandalone(); mode = 'error'; report(error); }
   }
